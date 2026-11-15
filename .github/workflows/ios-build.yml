@@ -77,6 +77,22 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee build/logs/test.log
 
+      - name: Annotate errors (1-10)
+        if: always()
+        env:
+          ANNOTATE_OFFSET: "0"
+        run: python3 tools/ci_annotate.py build/logs/build.log build/logs/test.log
+      - name: Annotate errors (11-20)
+        if: always()
+        env:
+          ANNOTATE_OFFSET: "10"
+        run: python3 tools/ci_annotate.py build/logs/build.log build/logs/test.log
+      - name: Annotate errors (21-30)
+        if: always()
+        env:
+          ANNOTATE_OFFSET: "20"
+        run: python3 tools/ci_annotate.py build/logs/build.log build/logs/test.log
+
       - name: Summarize results
         if: always()
         run: |
@@ -131,6 +147,10 @@ jobs:
             -archivePath build/MyMoneyAI.xcarchive \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             2>&1 | tee build/logs/archive.log
+
+      - name: Annotate errors
+        if: failure()
+        run: python3 tools/ci_annotate.py build/logs/archive.log
 
       - name: Package unsigned IPA
         run: |
