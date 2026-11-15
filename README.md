@@ -1,42 +1,70 @@
-# MyMoney AI — Phase 1 (Foundation)
+# MyMoney AI
 
-Offline, local-first iPhone finance tracker. SwiftUI + SwiftData, iOS 17+, no third-party packages, no network.
+An offline, private iPhone app for tracking income, expenses, receipts and bills.
+It is built with SwiftUI, SwiftData, Swift Charts and Apple Vision, targets iOS 17+, and uses no third-party packages, accounts or network access.
 
-## Build status
+> **Build status:** the iOS app **has not been compiled yet**. Development happens on Windows, where Xcode isn't available.
+> See [docs/BUILD_STATUS.md](docs/BUILD_STATUS.md) for what has been verified and what hasn't.
 
-**Not compiled yet.** This source was written on a Windows machine with no Xcode or Swift toolchain,
-so nothing here has been built or tested. Run the steps below on a Mac before starting Phase 2.
+## Repository layout
 
-## Build on a Mac
+```
+MyMoneyAI/                ← repository root
+├── project.yml           ← XcodeGen spec (source of truth for the Xcode project)
+├── MyMoneyAI/            ← app sources (this is the source folder, not a nested project)
+│   ├── App/  Models/  Features/  Services/  Components/  Utilities/  Resources/
+│   └── Tests/            ← unit tests (Swift Testing + XCTest), synthetic data only
+├── tools/check_sources.py← static checks that run on Windows
+└── docs/                 ← ARCHITECTURE, ROADMAP, BUILD_STATUS
+```
 
-Requires Xcode 16 or later (Swift Testing is used) and [XcodeGen](https://github.com/yonaskolb/XcodeGen),
-which generates the `.xcodeproj` from `project.yml`. XcodeGen is a build-time tool only, not an app dependency.
+The `.xcodeproj` is generated on the Mac and is not committed.
+
+## Developing on Windows
+
+Windows can't compile or run iOS apps. On Windows you can:
+
+1. Edit Swift sources in any editor. VS Code with the Swift extension gives syntax highlighting.
+2. Run the static checks with Python 3. They catch unbalanced brackets, duplicate type names and test files that are missing an import:
+   ```bash
+   python tools/check_sources.py
+   ```
+3. Commit and push with Git.
+
+These checks are **not** compilation. Type errors, API misuse and test failures only show up on a Mac.
+
+## Building on a Mac
+
+Requirements: macOS with **Xcode 16 or later** (iOS 17+ SDK, Swift Testing) and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+XcodeGen is a build-time tool only; the app has no dependencies.
 
 ```bash
 brew install xcodegen
 ```
 
 ```bash
-cd MyMoneyAI && xcodegen generate
+git clone https://github.com/aravindmarri/MyMoneyAI.git && cd MyMoneyAI
+```
+
+```bash
+xcodegen generate
 ```
 
 ```bash
 xcodebuild -project MyMoneyAI.xcodeproj -scheme MyMoneyAI -destination 'platform=iOS Simulator,name=iPhone 16' build test
 ```
 
-To run on a device, open `MyMoneyAI.xcodeproj`, choose your team under Signing & Capabilities, and run.
+To run on an iPhone, open `MyMoneyAI.xcodeproj` in Xcode, set your Team under *Signing & Capabilities* for the MyMoneyAI target, choose your device, and run.
 
-## Architecture decisions
+After the first Mac build, record the results in `docs/BUILD_STATUS.md`.
 
-- **Model names:** `MoneyTransaction` and `SpendingCategory` (files are still `Transaction.swift` and `Category.swift`).
-  This avoids clashes with `SwiftUI.Transaction` and the Objective-C `Category` typedef.
-- **Money:** stored as `Int64` minor units. Currency exponents follow ISO 4217, and conversions go through `Decimal`.
-  Amounts are always positive; `transactionType` sets the direction and `isRefund` reverses it within that type.
-- **Calculations:** these run on `TransactionRecord` value snapshots, not live SwiftData objects, so they can be tested without a database.
-  Ranges are start-inclusive and end-exclusive. Transfers and adjustments are never counted, and other currencies are left out rather than converted.
-- **Persistence:** CloudKit is explicitly off (`cloudKitDatabase: .none`). The store sits in Application Support/Store and uses
-  `completeUntilFirstUserAuthentication` data protection. `VersionedSchema` V1 plus a migration plan are in place.
-- **Seeding:** only the system categories and one settings row are created. There are no sample transactions.
-- **Concurrency:** Swift 5 language mode with `SWIFT_STRICT_CONCURRENCY=complete`. Concurrency problems show up as warnings, and these should
-  be cleared before switching to Swift 6 mode.
-- **Bills:** bills are obligations, and the calculation service never reads them.
+## Privacy
+
+- Everything stays on the device. The app has no iCloud sync, analytics, ads or accounts, and never connects to your bank.
+- Never commit screenshots of real finances, real receipts, local databases, exports, signing keys or credentials. `.gitignore` blocks common cases, but always review `git status` before committing.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Build status](docs/BUILD_STATUS.md)
