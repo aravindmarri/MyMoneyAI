@@ -182,9 +182,11 @@ final class NoNetworkTests: XCTestCase {
         _ = HeuristicCategorySuggestionService().suggest(merchant: parsed.merchant?.value, receiptText: lines.joined(separator: "\n"),
                                                          kind: .expense, categories: [], history: [])
 
-        let records = (0..<50).map { i in
-            TransactionRecord(transactionDate: Date(timeIntervalSince1970: 1_700_000_000 + Double(i) * 86_400), amountMinorUnits: Int64(100 + i),
-                              title: "t\(i)", transactionType: i % 5 == 0 ? .income : .expense)
+        var records: [TransactionRecord] = []
+        for i in 0..<50 {
+            let date = Date(timeIntervalSince1970: 1_700_000_000 + Double(i) * 86_400)
+            let type: TransactionType = i % 5 == 0 ? .income : .expense
+            records.append(TransactionRecord(transactionDate: date, amountMinorUnits: Int64(100 + i), title: "t\(i)", transactionType: type))
         }
         let finance = FinanceCalculationService()
         let range = DateRange(start: .distantPast, end: .distantFuture)
