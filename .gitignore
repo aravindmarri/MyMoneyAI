@@ -85,3 +85,4 @@ fastlane/report.xml
 # Python
 __pycache__/
 *.pyc
+jobs.json
