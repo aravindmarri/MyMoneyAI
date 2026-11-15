@@ -97,7 +97,7 @@ struct TransactionDetailView: View {
                 LabeledContent("Category", value: category?.name ?? "Uncategorized")
             }
             paymentRows(t)
-            LabeledContent("Source", value: t.source == .receiptOCR ? "Receipt" : "Manual")
+            LabeledContent("Source", value: t.source.displayName)
         }
     }
 

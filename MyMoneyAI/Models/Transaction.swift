@@ -35,7 +35,20 @@ enum TransactionType: String, Codable, CaseIterable, Identifiable, Sendable {
 }
 
 enum TransactionSource: String, Codable, Sendable {
-    case manual, receiptOCR
+    case manual, receiptOCR, csvImport
+
+    /// Unknown values (from a newer app version's backup) read as `.manual` instead of failing the import.
+    var displayName: String {
+        switch self {
+        case .manual: "Manual"
+        case .receiptOCR: "Receipt"
+        case .csvImport: "CSV import"
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        self = TransactionSource(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .manual
+    }
 }
 
 /// Immutable value snapshot of a transaction. Calculations operate on this type so financial

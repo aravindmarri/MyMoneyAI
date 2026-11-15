@@ -67,4 +67,17 @@ final class TransactionRepository {
         context.delete(t)
         try context.save()
     }
+
+    /// Inserts imported transactions with one save. On any error nothing is kept.
+    @discardableResult
+    func insertImported(_ records: [TransactionRecord]) throws -> Int {
+        for r in records { context.insert(MoneyTransaction(record: r)) }
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+        return records.count
+    }
 }

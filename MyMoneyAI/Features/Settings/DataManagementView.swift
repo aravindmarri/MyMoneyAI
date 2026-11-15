@@ -68,6 +68,9 @@ struct DataManagementView: View {
     @State private var resultMessage: String?
     @State private var confirmReceiptCleanup = false
     @State private var showDeleteAll = false
+    @State private var csvExport: CSVDocument?
+    @State private var showCSVImporter = false
+    @State private var csvImport: CSVImportRequest?
 
     private var unattachedCount: Int {
         let used = Set(transactions.compactMap(\.receiptId))
@@ -77,6 +80,7 @@ struct DataManagementView: View {
     var body: some View {
         List {
             backupSection
+            csvSection
             Section {
                 LabeledContent("Unattached receipts", value: "\(unattachedCount)")
                 Button("Delete Unattached Receipts", role: .destructive) { confirmReceiptCleanup = true }
@@ -114,6 +118,22 @@ struct DataManagementView: View {
                 return "Deleted \(n) receipts."
             } }
         } message: { Text("This can't be undone. Transactions are not affected.") }
+        .background {
+            // A second exporter and importer on the same view conflict, so these live on a background view.
+            Color.clear
+                .fileExporter(isPresented: Binding(get: { csvExport != nil }, set: { if !$0 { csvExport = nil } }),
+                              document: csvExport, contentType: .commaSeparatedText, defaultFilename: Self.csvFilename()) { result in
+                    if case .failure(let error) = result { resultMessage = error.localizedDescription }
+                    else { resultMessage = "Transactions exported. The CSV file isn't encrypted: store it somewhere private." }
+                    csvExport = nil
+                }
+                .fileImporter(isPresented: $showCSVImporter, allowedContentTypes: [.commaSeparatedText, .plainText, .text, .data]) { result in
+                    readCSV(result)
+                }
+        }
+        .sheet(item: $csvImport) { request in
+            CSVImportView(table: request.table) { message in resultMessage = message }
+        }
         .sheet(isPresented: $showDeleteAll) {
             DeleteAllDataView { run { try app.backup.deleteAllData(); return "All data was deleted." } }
         }
@@ -130,6 +150,55 @@ struct DataManagementView: View {
             Text("Backup")
         } footer: {
             Text("Backups are encrypted with your password (AES-256-GCM) and include receipt images. You choose where the file is saved. Importing only adds items that aren't already on this iPhone.")
+        }
+    }
+
+    private var csvSection: some View {
+        Section {
+            Button { exportCSV() } label: { Label("Export Transactions (CSV)", systemImage: "tablecells") }
+                .disabled(transactions.isEmpty)
+            Button { showCSVImporter = true } label: { Label("Import Bank Statement (CSV)", systemImage: "doc.text") }
+        } header: {
+            Text("Spreadsheet")
+        } footer: {
+            Text("CSV files open in Excel, Numbers and Google Sheets. They aren't encrypted and don't include receipt images. Importing shows every row first and skips transactions that are already in the app.")
+        }
+    }
+
+    static func csvFilename(now: Date = .now) -> String {
+        "MyMoneyAI-Transactions-\(now.formatted(.iso8601.year().month().day()))"
+    }
+
+    private func exportCSV() {
+        do {
+            let categories = try app.persistence.context.fetch(FetchDescriptor<SpendingCategory>())
+            let methods = try app.persistence.context.fetch(FetchDescriptor<PaymentMethod>())
+            let text = CSVTransactionExporter.csv(
+                records: try app.transactions.allRecords(),
+                categoryNames: Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a }),
+                paymentMethodNames: Dictionary(methods.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a }),
+                calendar: .current)
+            csvExport = CSVDocument(text: text)
+        } catch {
+            resultMessage = error.localizedDescription
+        }
+    }
+
+    private func readCSV(_ result: Result<URL, Error>) {
+        switch result {
+        case .failure(let error):
+            resultMessage = error.localizedDescription
+        case .success(let url):
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                guard size <= CSVParser.maximumFileBytes else { throw CSVError.tooLarge }
+                let table = try CSVParser.parse(try CSVParser.decode(try Data(contentsOf: url)))
+                csvImport = CSVImportRequest(table: table)
+            } catch {
+                resultMessage = error.localizedDescription
+            }
         }
     }
 
