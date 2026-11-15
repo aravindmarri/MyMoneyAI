@@ -1,0 +1,164 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  SCHEME: MyMoneyAI
+  PROJECT: MyMoneyAI.xcodeproj
+
+jobs:
+  build-and-test:
+    name: Simulator build and tests
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          xcrun simctl list runtimes
+
+      - name: Static source checks
+        run: python3 tools/check_sources.py
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in data if "iOS" in k), key=lambda k: [int(p) for p in k.rsplit("iOS-", 1)[-1].split("-")], reverse=True)
+          for runtime in ios:
+              for d in data[runtime]:
+                  if d["name"].startswith("iPhone"):
+                      print(d["udid"]); sys.exit(0)
+          sys.exit("no iPhone simulator found")')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          mkdir -p build/logs
+          xcodebuild build-for-testing \
+            -project "$PROJECT" -scheme "$SCHEME" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build/logs/build.log
+
+      - name: Run tests
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project "$PROJECT" -scheme "$SCHEME" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build/DerivedData \
+            -resultBundlePath build/TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build/logs/test.log
+
+      - name: Summarize results
+        if: always()
+        run: |
+          {
+            echo "## Build and test"
+            echo
+            if [ -f build/logs/build.log ]; then
+              echo "### Compiler errors"
+              echo '```'
+              grep -E "error:" build/logs/build.log | sort -u | head -50 || echo "none"
+              echo '```'
+            fi
+            if [ -d build/TestResults.xcresult ]; then
+              echo "### Test summary"
+              echo '```'
+              xcrun xcresulttool get test-results summary --path build/TestResults.xcresult 2>/dev/null | head -80 || echo "summary unavailable"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload logs and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-and-test-results
+          path: |
+            build/logs
+            build/TestResults.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
+
+  unsigned-archive:
+    name: Unsigned device archive (IPA for re-signing)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen and generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Archive for iOS devices without signing
+        run: |
+          set -o pipefail
+          mkdir -p build/logs
+          xcodebuild archive \
+            -project "$PROJECT" -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath build/MyMoneyAI.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            2>&1 | tee build/logs/archive.log
+
+      - name: Package unsigned IPA
+        run: |
+          APP=build/MyMoneyAI.xcarchive/Products/Applications/MyMoneyAI.app
+          test -d "$APP"
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../MyMoneyAI-unsigned.ipa Payload)
+          ls -lh build/MyMoneyAI-unsigned.ipa
+          {
+            echo "## Unsigned IPA"
+            echo
+            echo "MyMoneyAI-unsigned.ipa is NOT signed and cannot be installed on an iPhone as-is."
+            echo "It must be re-signed with your own Apple Account (e.g. via Sideloadly or AltStore) before installing."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyMoneyAI-unsigned-ipa
+          path: build/MyMoneyAI-unsigned.ipa
+          retention-days: 14
+
+      - name: Upload archive log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-log
+          path: build/logs
+          if-no-files-found: ignore
+          retention-days: 14
