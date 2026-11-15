@@ -22,7 +22,8 @@ import UIKit
         let rows: [(String, String)] = [("CORNER CAFE", ""), ("03/15/2024", ""), ("Latte", "4.50"), ("Muffin", "3.25"),
                                         ("SUBTOTAL", "7.75"), ("TAX", "0.64"), ("TOTAL", "8.39")]
         let image = SyntheticReceipt.render(rows)
-        let normalized = try #require(ImageNormalizer.normalize(try #require(image.pngData())))
+        let png = try #require(image.pngData())
+        let normalized = try #require(ImageNormalizer.normalize(png))
         let lines = try await VisionReceiptOCRService().recognizeText(in: normalized.cgImage)
         let parsed = ReceiptParserService().parse(lines: lines, defaultCurrency: "USD")
         #expect(parsed.total?.value == 839, "Recognized lines: \(lines)")
@@ -70,8 +71,10 @@ enum SyntheticReceipt {
 
     @Test func sameImageReencodedHasSameOrNearFingerprint() throws {
         let image = SyntheticReceipt.render([("FRESH MART", ""), ("TOTAL", "4.78")])
-        let a = try #require(ImageNormalizer.normalize(try #require(image.pngData())))
-        let b = try #require(ImageNormalizer.normalize(try #require(image.jpegData(compressionQuality: 0.6))))
+        let png = try #require(image.pngData())
+        let jpeg = try #require(image.jpegData(compressionQuality: 0.6))
+        let a = try #require(ImageNormalizer.normalize(png))
+        let b = try #require(ImageNormalizer.normalize(jpeg))
         let fa = try #require(ImageFingerprint.fingerprint(for: a.cgImage).flatMap(ImageFingerprint.parse))
         let fb = try #require(ImageFingerprint.fingerprint(for: b.cgImage).flatMap(ImageFingerprint.parse))
         #expect(ImageFingerprint.distance(fa, fb) <= DuplicateDetectionService.similarImageThreshold)
