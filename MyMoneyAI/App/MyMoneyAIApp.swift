@@ -13,7 +13,7 @@ struct MyMoneyAIApp: App {
         WindowGroup {
             switch launch {
             case .success(let container):
-                RootTabView()
+                LockGate { RootTabView() }
                     .environment(container)
                     .modelContainer(container.persistence.container)
             case .failure(let error):

@@ -16,6 +16,12 @@ struct SettingsView: View {
                 if let s = settings.first {
                     PreferencesSection(settings: s)
                 }
+                if let s = settings.first {
+                    SecuritySection(settings: s)
+                }
+                Section("Data") {
+                    NavigationLink { DataManagementView() } label: { Label("Backup & Data", systemImage: "externaldrive") }
+                }
                 Section("About") {
                     NavigationLink { PrivacyInfoView() } label: { Label("Privacy", systemImage: "lock.shield") }
                     LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")

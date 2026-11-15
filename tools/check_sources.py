@@ -3,7 +3,8 @@
 
 This is NOT a compiler. It catches structural mistakes that are easy to make
 without Xcode: unbalanced brackets, duplicate top-level type names, and files
-that would be added to the wrong target. Run: python tools/check_sources.py
+that would be added to the wrong target. It also fails if app code uses any
+network or iCloud API, since the app must work fully offline. Run: python tools/check_sources.py
 """
 import pathlib
 import re
@@ -68,6 +69,22 @@ def check_balance(path: pathlib.Path, errors: list) -> None:
         errors.append(f"{path.relative_to(ROOT)}:{ln}: unclosed '{ch}'")
 
 
+# APIs that would let the app reach the network or sync off the device. The app must work fully offline.
+NETWORK_APIS = re.compile(
+    r"\b(URLSession|URLRequest|NWConnection|NWPathMonitor|CFNetwork|WKWebView|SFSafariViewController|"
+    r"CKContainer|CKDatabase|NSUbiquitousKeyValueStore|ubiquityIdentityToken|openURL)\b"
+    r"|\bimport\s+(Network|CloudKit|WebKit)\b|https?://")
+
+
+def check_offline(path: pathlib.Path, errors: list) -> None:
+    """Scans every line except pure comment lines (string literals are included on purpose)."""
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if line.lstrip().startswith("//"):
+            continue
+        if NETWORK_APIS.search(line):
+            errors.append(f"{path.relative_to(ROOT)}:{n}: network or cloud API in app code: {line.strip()}")
+
+
 def main() -> int:
     errors: list = []
     files = sorted(APP.rglob("*.swift"))
@@ -82,6 +99,8 @@ def main() -> int:
             if key in seen:
                 errors.append(f"duplicate type '{name}' in {f.relative_to(ROOT)} and {seen[key]}")
             seen[key] = f.relative_to(ROOT)
+        if not is_test:
+            check_offline(f, errors)
         if is_test and "@testable import MyMoneyAI" not in text:
             errors.append(f"{f.relative_to(ROOT)}: test file missing '@testable import MyMoneyAI'")
     print(f"Checked {len(files)} Swift files.")

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 
 enum AppTab: Hashable {
     case home, transactions, scan, reports, settings
@@ -17,6 +18,8 @@ final class AppContainer {
     let bills: BillRepository
     let budgets: BudgetRepository
     let budgetCalculator: BudgetCalculationService
+    let backup: BackupService
+    let lock: AppLockController
     let textRecognizer: any ReceiptTextRecognizing
     let categorySuggester: any CategorySuggesting
     var selectedTab: AppTab = .home
@@ -25,7 +28,8 @@ final class AppContainer {
          receiptStorage: ReceiptStorageService,
          finance: FinanceCalculationService = FinanceCalculationService(),
          textRecognizer: any ReceiptTextRecognizing = VisionReceiptOCRService(),
-         categorySuggester: any CategorySuggesting = HeuristicCategorySuggestionService()) {
+         categorySuggester: any CategorySuggesting = HeuristicCategorySuggestionService(),
+         authenticator: any DeviceAuthenticating = LocalDeviceAuthenticator()) {
         self.persistence = persistence
         self.finance = finance
         self.transactions = TransactionRepository(context: persistence.context)
@@ -34,6 +38,9 @@ final class AppContainer {
         self.bills = BillRepository(context: persistence.context)
         self.budgets = BudgetRepository(context: persistence.context)
         self.budgetCalculator = BudgetCalculationService(finance: finance)
+        self.backup = BackupService(context: persistence.context, storage: receiptStorage)
+        let lockEnabled = (try? persistence.context.fetch(FetchDescriptor<AppSettings>()).first?.requireBiometricUnlock) ?? false
+        self.lock = AppLockController(isEnabled: lockEnabled, authenticator: authenticator)
         self.textRecognizer = textRecognizer
         self.categorySuggester = categorySuggester
     }

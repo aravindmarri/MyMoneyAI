@@ -81,3 +81,7 @@ receipts/
 .env.*
 secrets/
 fastlane/report.xml
+
+# Python
+__pycache__/
+*.pyc
