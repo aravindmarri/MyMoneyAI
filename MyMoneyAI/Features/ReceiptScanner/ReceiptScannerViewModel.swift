@@ -51,7 +51,7 @@ final class ReceiptScannerViewModel {
     }
 
     /// Pure mapping from parsed values to an editable expense draft.
-    static func makeDraft(from parsed: ParsedReceipt?, defaultCurrency: String, now: Date = .now) -> TransactionDraft {
+    nonisolated static func makeDraft(from parsed: ParsedReceipt?, defaultCurrency: String, now: Date = .now) -> TransactionDraft {
         let currency = parsed?.currencyCode?.value ?? defaultCurrency
         var draft = TransactionDraft(currencyCode: currency, date: parsed?.date?.value ?? now)
         draft.type = .expense
