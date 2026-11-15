@@ -24,6 +24,14 @@ enum TransactionType: String, Codable, CaseIterable, Identifiable, Sendable {
         case .adjustment: "slider.horizontal.3"
         }
     }
+    /// Category kind that applies to this type; transfers and adjustments have no category.
+    var categoryKind: CategoryKind? {
+        switch self {
+        case .income: .income
+        case .expense: .expense
+        case .transfer, .adjustment: nil
+        }
+    }
 }
 
 enum TransactionSource: String, Codable, Sendable {

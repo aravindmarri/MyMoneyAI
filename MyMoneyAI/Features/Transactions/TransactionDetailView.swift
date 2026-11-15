@@ -39,42 +39,13 @@ struct TransactionDetailView: View {
         let record = t.record
         let category = t.categoryId.flatMap { id in categories.first { $0.id == id } }
         return List {
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(CurrencyMath.format(t.amountMinorUnits, currencyCode: t.currencyCode))
-                        .font(.largeTitle.weight(.semibold).monospacedDigit())
-                    Label(t.transactionType.displayName + (t.isRefund ? " · Refund" : ""), systemImage: t.transactionType.symbol)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
-            }
-            Section("Details") {
-                LabeledContent("Title", value: t.title)
-                if let m = t.merchant { LabeledContent("Merchant", value: m) }
-                LabeledContent("Date", value: t.transactionDate.formatted(date: .long, time: .omitted))
-                if t.transactionType.categoryKind != nil {
-                    LabeledContent("Category", value: category?.name ?? "Uncategorized")
-                }
-                if t.transactionType == .transfer {
-                    LabeledContent("From", value: methodName(t.paymentMethodId) ?? "Not specified")
-                    LabeledContent("To", value: methodName(t.transferDestinationPaymentMethodId) ?? "Not specified")
-                } else {
-                    LabeledContent("Payment", value: methodName(t.paymentMethodId) ?? "Not specified")
-                }
-                LabeledContent("Source", value: t.source == .receiptOCR ? "Receipt" : "Manual")
-            }
+            headerSection(t)
+            detailsSection(t, category: category)
             if let notes = t.notes, !notes.isEmpty {
                 Section("Notes") { Text(notes) }
             }
-            Section {
-                LabeledContent("Recorded", value: t.createdAt.formatted(date: .abbreviated, time: .shortened))
-                LabeledContent("Last edited", value: t.updatedAt.formatted(date: .abbreviated, time: .shortened))
-            }
-            .font(.footnote)
-            Section {
-                Button { editorRoute = .duplicate(record) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
-                Button(role: .destructive) { confirmDelete = true } label: { Label("Delete Transaction", systemImage: "trash") }
-            }
+            timestampsSection(t)
+            actionsSection(record)
         }
         .navigationTitle(t.merchant ?? t.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -90,6 +61,73 @@ struct TransactionDetailView: View {
             }
         } message: {
             Text("This can't be undone.")
+        }
+    }
+
+    // MARK: Sections
+
+    private func headerSection(_ t: MoneyTransaction) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(CurrencyMath.format(t.amountMinorUnits, currencyCode: t.currencyCode))
+                    .font(.largeTitle.weight(.semibold).monospacedDigit())
+                Label(typeLabel(t), systemImage: t.transactionType.symbol)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func typeLabel(_ t: MoneyTransaction) -> String {
+        t.transactionType.displayName + (t.isRefund ? " · Refund" : "")
+    }
+
+    private func detailsSection(_ t: MoneyTransaction, category: SpendingCategory?) -> some View {
+        Section("Details") {
+            LabeledContent("Title", value: t.title)
+            if let m = t.merchant {
+                LabeledContent("Merchant", value: m)
+            }
+            LabeledContent("Date", value: t.transactionDate.formatted(date: .long, time: .omitted))
+            if t.transactionType.categoryKind != nil {
+                LabeledContent("Category", value: category?.name ?? "Uncategorized")
+            }
+            paymentRows(t)
+            LabeledContent("Source", value: t.source == .receiptOCR ? "Receipt" : "Manual")
+        }
+    }
+
+    @ViewBuilder
+    private func paymentRows(_ t: MoneyTransaction) -> some View {
+        let notSpecified = "Not specified"
+        if t.transactionType == .transfer {
+            LabeledContent("From", value: methodName(t.paymentMethodId) ?? notSpecified)
+            LabeledContent("To", value: methodName(t.transferDestinationPaymentMethodId) ?? notSpecified)
+        } else {
+            LabeledContent("Payment", value: methodName(t.paymentMethodId) ?? notSpecified)
+        }
+    }
+
+    private func timestampsSection(_ t: MoneyTransaction) -> some View {
+        Section {
+            LabeledContent("Recorded", value: t.createdAt.formatted(date: .abbreviated, time: .shortened))
+            LabeledContent("Last edited", value: t.updatedAt.formatted(date: .abbreviated, time: .shortened))
+        }
+        .font(.footnote)
+    }
+
+    private func actionsSection(_ record: TransactionRecord) -> some View {
+        Section {
+            Button {
+                editorRoute = .duplicate(record)
+            } label: {
+                Label("Duplicate", systemImage: "plus.square.on.square")
+            }
+            Button(role: .destructive) {
+                confirmDelete = true
+            } label: {
+                Label("Delete Transaction", systemImage: "trash")
+            }
         }
     }
 }
