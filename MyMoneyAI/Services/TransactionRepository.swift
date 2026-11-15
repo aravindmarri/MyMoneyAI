@@ -8,10 +8,18 @@ enum RepositoryError: Error, Equatable, LocalizedError {
     case paymentMethodInUse(transactions: Int)
     case invalidName
     case receiptAlreadyAttached
+    case billPaymentMustBeExpense
+    case transactionAlreadyLinkedToBill
+    case billCurrencyMismatch
+    case invalidBillSchedule
 
     var errorDescription: String? {
         switch self {
         case .receiptAlreadyAttached: "That transaction already has a receipt."
+        case .billPaymentMustBeExpense: "Only an expense can be recorded as a bill payment."
+        case .transactionAlreadyLinkedToBill: "That transaction is already recorded as a bill payment."
+        case .billCurrencyMismatch: "The transaction is in a different currency from the bill."
+        case .invalidBillSchedule: "The bill's repeat interval is not valid. Edit the bill first."
         case .notFound: "The item no longer exists."
         case .categoryInUse(let n): "This category is used by \(n) transaction(s). Choose where to move them first."
         case .invalidReassignmentTarget: "Choose a different category of the same type."

@@ -6,6 +6,7 @@ struct DashboardView: View {
     @Query(sort: \MoneyTransaction.transactionDate, order: .reverse) private var transactions: [MoneyTransaction]
     @Query(sort: \SpendingCategory.displayOrder) private var categories: [SpendingCategory]
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }, sort: \RecurringBill.nextDueDate) private var bills: [RecurringBill]
+    @Query private var budgets: [Budget]
     @Query private var settings: [AppSettings]
     @State private var model = DashboardViewModel()
     @State private var editorRoute: TransactionEditorRoute?
@@ -32,6 +33,7 @@ struct DashboardView: View {
                     quickActions
                     spendingSection(records: records, categories: categories)
                     cashFlowSection(records: records)
+                    budgetsSection(records: records, categoryByID: categoryByID)
                     recentSection(monthTransactions, categoryByID: categoryByID)
                     billsSection
                 }
@@ -134,22 +136,41 @@ struct DashboardView: View {
     }
 
     private var billsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Upcoming Bills").font(.headline)
+        let now = Date.now
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Upcoming Bills").font(.headline)
+                Spacer()
+                NavigationLink("All") { BillsView() }.font(.subheadline)
+            }
             if bills.isEmpty {
                 Text("No recurring bills. Unpaid bills are tracked separately and never counted as spending.")
                     .font(.subheadline).foregroundStyle(.secondary)
             } else {
                 ForEach(bills.prefix(3)) { bill in
-                    HStack {
-                        Text(bill.title)
-                        Spacer()
-                        Text(bill.nextDueDate, format: .dateTime.month(.abbreviated).day())
-                            .foregroundStyle(.secondary)
-                    }
+                    NavigationLink { BillDetailView(bill: bill) } label: { BillRow(bill: bill, now: now) }
+                        .buttonStyle(.plain)
                 }
             }
         }
         .card()
+    }
+
+    @ViewBuilder
+    private func budgetsSection(records: [TransactionRecord], categoryByID: [UUID: SpendingCategory]) -> some View {
+        let progress = app.budgetCalculator.progress(budgets: budgets.map(\.record), records: records, month: model.range.start)
+        if !progress.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Budgets").font(.headline)
+                    Spacer()
+                    NavigationLink("All") { BudgetsView() }.font(.subheadline)
+                }
+                ForEach(progress.prefix(3)) { p in
+                    BudgetProgressRow(progress: p, name: BudgetsView.name(p.budget, categoryByID.mapValues(\.name)))
+                }
+            }
+            .card()
+        }
     }
 }

@@ -10,8 +10,8 @@ struct SettingsView: View {
                 Section("Organize") {
                     NavigationLink { CategoriesView() } label: { Label("Categories", systemImage: "square.grid.2x2") }
                     NavigationLink { PaymentMethodsView() } label: { Label("Payment Methods", systemImage: "creditcard") }
-                    NavigationLink { BillsListView() } label: { Label("Recurring Bills", systemImage: "calendar.badge.clock") }
-                    NavigationLink { BudgetsListView() } label: { Label("Budgets", systemImage: "gauge.with.dots.needle.33percent") }
+                    NavigationLink { BillsView() } label: { Label("Recurring Bills", systemImage: "calendar.badge.clock") }
+                    NavigationLink { BudgetsView() } label: { Label("Budgets", systemImage: "gauge.with.dots.needle.33percent") }
                 }
                 if let s = settings.first {
                     PreferencesSection(settings: s)
@@ -39,42 +39,6 @@ private struct PreferencesSection: View {
                 ForEach(AppearancePreference.allCases) { Text($0.displayName).tag($0) }
             }
         }
-    }
-}
-
-struct BillsListView: View {
-    @Query(sort: \RecurringBill.nextDueDate) private var bills: [RecurringBill]
-
-    var body: some View {
-        Group {
-            if bills.isEmpty {
-                EmptyStateView(title: "No Recurring Bills", systemImage: "calendar.badge.clock",
-                               message: "Bills are reminders of what you owe. They are not counted as spending until you record a payment.")
-            } else {
-                List(bills) { b in
-                    LabeledContent(b.title, value: b.nextDueDate.formatted(date: .abbreviated, time: .omitted))
-                }
-            }
-        }
-        .navigationTitle("Recurring Bills")
-    }
-}
-
-struct BudgetsListView: View {
-    @Query private var budgets: [Budget]
-
-    var body: some View {
-        Group {
-            if budgets.isEmpty {
-                EmptyStateView(title: "No Budgets", systemImage: "gauge.with.dots.needle.33percent",
-                               message: "Set a monthly limit overall or per category to track progress.")
-            } else {
-                List(budgets) { b in
-                    Text(CurrencyMath.format(b.amountMinorUnits, currencyCode: b.currencyCode))
-                }
-            }
-        }
-        .navigationTitle("Budgets")
     }
 }
 

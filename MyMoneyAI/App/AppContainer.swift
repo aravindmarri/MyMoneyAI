@@ -14,6 +14,9 @@ final class AppContainer {
     let transactions: TransactionRepository
     let referenceData: ReferenceDataRepository
     let receipts: ReceiptRepository
+    let bills: BillRepository
+    let budgets: BudgetRepository
+    let budgetCalculator: BudgetCalculationService
     let textRecognizer: any ReceiptTextRecognizing
     let categorySuggester: any CategorySuggesting
     var selectedTab: AppTab = .home
@@ -28,6 +31,9 @@ final class AppContainer {
         self.transactions = TransactionRepository(context: persistence.context)
         self.referenceData = ReferenceDataRepository(context: persistence.context)
         self.receipts = ReceiptRepository(context: persistence.context, storage: receiptStorage)
+        self.bills = BillRepository(context: persistence.context)
+        self.budgets = BudgetRepository(context: persistence.context)
+        self.budgetCalculator = BudgetCalculationService(finance: finance)
         self.textRecognizer = textRecognizer
         self.categorySuggester = categorySuggester
     }
