@@ -122,7 +122,6 @@ final class BackupServiceTests: XCTestCase {
 
     /// Fills a store with one of everything. Synthetic data only.
     private func populate(_ p: PersistenceService, receipts: ReceiptRepository) throws {
-        let kinds = try ReferenceDataRepository(context: p.context).categoryKinds()
         let groceries = try category("Groceries", in: p).id
         let custom = SpendingCategory(name: "Hobbies", symbol: "paintbrush", colorIdentifier: "purple", kind: .expense,
                                       isSystemCategory: false, displayOrder: 99)
@@ -130,6 +129,7 @@ final class BackupServiceTests: XCTestCase {
         let card = PaymentMethod(name: "Test Card", type: .creditCard, lastFourDigits: "4242")
         p.context.insert(card)
         try p.context.save()
+        let kinds = try ReferenceDataRepository(context: p.context).categoryKinds()   // after adding the custom category
 
         var d = TransactionDraft(currencyCode: "USD", date: Date(timeIntervalSince1970: 1_710_000_000))
         d.title = "Fresh Mart"; d.amountText = "47.80"; d.categoryId = groceries; d.paymentMethodId = card.id

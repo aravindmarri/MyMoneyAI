@@ -11,6 +11,13 @@ final class PersistenceService {
         container = try Self.makeContainer(inMemory: inMemory)
     }
 
+    /// Opens (or creates) a store at a specific file. Used by tests that close and reopen a real on-disk store.
+    init(storeURL: URL) throws {
+        let schema = Schema(versionedSchema: MyMoneySchemaV1.self)
+        let configuration = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
+        container = try ModelContainer(for: schema, migrationPlan: MyMoneyMigrationPlan.self, configurations: [configuration])
+    }
+
     static func makeContainer(inMemory: Bool) throws -> ModelContainer {
         let schema = Schema(versionedSchema: MyMoneySchemaV1.self)
         let configuration: ModelConfiguration

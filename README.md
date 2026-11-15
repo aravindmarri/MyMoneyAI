@@ -20,6 +20,77 @@ MyMoneyAI/                ← repository root
 
 The `.xcodeproj` is generated on the Mac and is not committed.
 
+## INSTALL_ON_IPHONE
+
+Install and test MyMoney AI on your own iPhone from a Windows PC, **free**: no paid Apple Developer membership, no TestFlight, no Mac.
+
+> **Status:** CI builds the device app and checks it automatically (see [docs/BUILD_STATUS.md](docs/BUILD_STATUS.md)). Installing on a physical iPhone has **not been verified yet**. Please report what happens.
+
+### What you need (all free)
+
+- Windows 10/11 PC and a USB cable for the iPhone
+- iPhone on iOS 17 or later
+- A free Apple Account. You may prefer a secondary free Apple Account just for sideloading (see the note on Sideloadly below).
+- **iTunes** and **iCloud** for Windows, downloaded **from apple.com, not the Microsoft Store**. Sideloadly needs Apple's device drivers from these installers.
+- **Sideloadly** from sideloadly.io (free)
+
+### 1. Download the app (`MyMoneyAI-unsigned-ipa`)
+
+1. Sign in to GitHub and open the repository's **Actions** tab, then the **iOS Build** workflow.
+2. Open the most recent run with a green tick on `main`.
+3. Under **Artifacts**, download **`MyMoneyAI-unsigned-ipa`**. GitHub delivers it as a ZIP, so unzip it to get **`MyMoneyAI-unsigned.ipa`**.
+4. Artifacts are kept for 14 days. If they have expired, open **iOS Build → Run workflow** on `main` to build a fresh one. This is free for a public repository.
+
+The IPA is **unsigned and can't be installed as-is**. Sideloadly signs it with your Apple Account in the next step. CI checks that it is the real arm64 iPhone app (not the simulator build) with bundle ID `io.github.aravindmarri.mymoneyai`.
+
+### 2. Prepare the iPhone (first time only)
+
+1. Connect the iPhone by USB, unlock it, and tap **Trust This Computer**.
+2. Install with Sideloadly once (step 3). Then on the iPhone, turn on **Settings → Privacy & Security → Developer Mode**, restart, and confirm.
+
+### 3. Sign and install with Sideloadly
+
+1. Open Sideloadly. Your iPhone should appear under **iDevice**.
+2. Drag `MyMoneyAI-unsigned.ipa` into the window.
+3. Enter your Apple Account email, then click **Start**. Enter the password and any two-factor code when Sideloadly asks; they go to Apple to create a free 7-day signing certificate.
+4. **Keep the bundle ID as it is.** In *Advanced options*, leave "Change Bundle ID" off. A constant bundle ID is what lets later installs replace the app **and keep its data**.
+5. When it finishes, on the iPhone go to **Settings → General → VPN & Device Management**, tap your Apple Account under *Developer App*, and tap **Trust**.
+6. Open **MyMoney AI**.
+
+### 4. Refresh every 7 days (without losing data)
+
+With a free Apple Account, the signature lasts **7 days**. After that the app won't open, **but its data stays on the iPhone**.
+
+- To refresh, run step 3 again with the **same Apple Account** and the **same (unchanged) bundle ID**, using the same IPA or a newer one. Sideloadly installs over the existing app and your data is kept.
+- **Don't delete the app to refresh it.** Deleting an iPhone app erases its data, including MyMoney AI's database and receipt images.
+- Updating to a newer build works the same way: download the newer artifact and install over the old one.
+- Free-account limits: up to 3 sideloaded apps at a time, and 10 new app IDs per 7 days. Keeping the bundle ID constant uses only one.
+- Optional: Sideloadly can refresh automatically over Wi-Fi while the PC is on. Manual refresh is enough.
+
+If the bundle ID ever changes, iOS treats the app as a different one. You'd get a second, empty copy, and the old copy keeps the old data until it is deleted.
+
+### 5. Back up before you enter real data
+
+1. **Settings → Backup & Data → Export Encrypted Backup**, then choose a password of at least 8 characters.
+2. Save the file in **Files**, then copy it to your PC. A backup stored only on the iPhone is lost with the iPhone. If you save to iCloud Drive, the encrypted file leaves the device; that's your choice.
+3. **Import Backup** only *adds* items that aren't already there; it never overwrites or deletes. The password can't be recovered.
+
+Make a backup before every refresh or update, at least until on-device testing is complete.
+
+### 6. Personal test checklist
+
+- [ ] App opens; the default categories are present and there is no sample data
+- [ ] Add, edit and delete a transaction; force-close (swipe up in the app switcher), reopen: changes are kept
+- [ ] Turn on **Airplane Mode**: scan a receipt (camera and Photos), view charts and reports, export a backup. Everything works offline
+- [ ] Bills: add, record payment, skip; budgets show progress
+- [ ] Face ID / passcode lock (Settings → Security): locks after leaving the app; the app switcher shows the privacy screen
+- [ ] Export a backup, re-sign and reinstall with Sideloadly (step 4): data is still there
+- [ ] Larger text sizes, VoiceOver and dark mode look right
+
+### A note on Sideloadly and your Apple Account
+
+Sideloadly is a free third-party tool, not made by Apple. It needs your Apple Account password to request the free signing certificate from Apple. If you'd rather not use your main account, create a separate free Apple Account for sideloading. MyMoney AI itself never sees your Apple Account and has no network access.
+
 ## Developing on Windows
 
 Windows can't compile or run iOS apps. On Windows you can:
@@ -54,7 +125,7 @@ xcodegen generate
 xcodebuild -project MyMoneyAI.xcodeproj -scheme MyMoneyAI -destination 'platform=iOS Simulator,name=iPhone 16' build test
 ```
 
-To run on an iPhone, open `MyMoneyAI.xcodeproj` in Xcode, set your Team under *Signing & Capabilities* for the MyMoneyAI target, choose your device, and run.
+To run on an iPhone from a Mac, open `MyMoneyAI.xcodeproj` in Xcode, set your Team under *Signing & Capabilities* for the MyMoneyAI target, choose your device, and run. Without a Mac, see [INSTALL_ON_IPHONE](#install_on_iphone).
 
 After the first Mac build, record the results in `docs/BUILD_STATUS.md`.
 

@@ -16,6 +16,9 @@ permissions:
 env:
   SCHEME: MyMoneyAI
   PROJECT: MyMoneyAI.xcodeproj
+  # Must match PRODUCT_BUNDLE_IDENTIFIER in project.yml. Keeping it stable lets a re-signed
+  # build install over the previous one and keep the app's data.
+  EXPECTED_BUNDLE_ID: io.github.aravindmarri.mymoneyai
 
 jobs:
   build-and-test:
@@ -157,6 +160,7 @@ jobs:
             -destination "generic/platform=iOS" \
             -archivePath build/MyMoneyAI.xcarchive \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             2>&1 | tee build/logs/archive.log
 
       - name: Annotate errors
@@ -176,6 +180,52 @@ jobs:
             echo
             echo "MyMoneyAI-unsigned.ipa is NOT signed and cannot be installed on an iPhone as-is."
             echo "It must be re-signed with your own Apple Account (e.g. via Sideloadly or AltStore) before installing."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify IPA is a real iPhone device build
+        run: |
+          set -euo pipefail
+          rm -rf build/verify && mkdir -p build/verify
+          unzip -q build/MyMoneyAI-unsigned.ipa -d build/verify
+          APP=build/verify/Payload/MyMoneyAI.app
+          test -f "$APP/MyMoneyAI" || { echo "::error::Payload/MyMoneyAI.app/MyMoneyAI missing"; exit 1; }
+          BUNDLE_ID=$(plutil -extract CFBundleIdentifier raw "$APP/Info.plist")
+          PLATFORM=$(plutil -extract DTPlatformName raw "$APP/Info.plist")
+          SUPPORTED=$(plutil -extract CFBundleSupportedPlatforms.0 raw "$APP/Info.plist")
+          VERSION=$(plutil -extract CFBundleShortVersionString raw "$APP/Info.plist")
+          BUILD=$(plutil -extract CFBundleVersion raw "$APP/Info.plist")
+          MIN_OS=$(plutil -extract MinimumOSVersion raw "$APP/Info.plist")
+          ARCHS=$(lipo -archs "$APP/MyMoneyAI")
+          BUILD_PLATFORM=$(vtool -show-build "$APP/MyMoneyAI" | awk '/platform/ {print $2; exit}')
+          LINKED=$(otool -L "$APP/MyMoneyAI" | tail -n +2 | awk '{print $1}')
+          echo "$LINKED"
+          FAIL=0
+          [ "$BUNDLE_ID" = "$EXPECTED_BUNDLE_ID" ] || { echo "::error::Bundle ID $BUNDLE_ID, expected $EXPECTED_BUNDLE_ID"; FAIL=1; }
+          [ "$PLATFORM" = "iphoneos" ] || { echo "::error::DTPlatformName is $PLATFORM, expected iphoneos (device)"; FAIL=1; }
+          [ "$SUPPORTED" = "iPhoneOS" ] || { echo "::error::CFBundleSupportedPlatforms is $SUPPORTED"; FAIL=1; }
+          [ "$BUILD_PLATFORM" = "IOS" ] || { echo "::error::Mach-O build platform is $BUILD_PLATFORM, expected IOS (not the simulator)"; FAIL=1; }
+          echo "$ARCHS" | grep -qw arm64 || { echo "::error::Binary architectures are '$ARCHS', expected arm64"; FAIL=1; }
+          echo "$ARCHS" | grep -qw x86_64 && { echo "::error::Binary contains x86_64 (simulator slice)"; FAIL=1; }
+          if echo "$LINKED" | grep -E '/(Network|CloudKit|WebKit)\.framework/'; then
+            echo "::error::App links a networking or cloud framework"; FAIL=1
+          fi
+          if [ -d "$APP/Frameworks" ] && [ -n "$(ls -A "$APP/Frameworks")" ]; then
+            echo "::error::App bundles third-party frameworks: $(ls "$APP/Frameworks" | xargs)"; FAIL=1
+          fi
+          [ "$FAIL" = 0 ] || exit 1
+          SIZE=$(stat -f%z build/MyMoneyAI-unsigned.ipa)
+          echo "::notice title=IPA verified::bundleId=$BUNDLE_ID, version=$VERSION ($BUILD), platform=$PLATFORM/$BUILD_PLATFORM, archs=$ARCHS, minOS=$MIN_OS, bytes=$SIZE"
+          {
+            echo "## IPA verification"
+            echo
+            echo "| Check | Value |"
+            echo "|---|---|"
+            echo "| Bundle ID | \`$BUNDLE_ID\` |"
+            echo "| Version (build) | $VERSION ($BUILD) |"
+            echo "| Platform | $PLATFORM / $BUILD_PLATFORM (device, not simulator) |"
+            echo "| Architectures | $ARCHS |"
+            echo "| Minimum iOS | $MIN_OS |"
+            echo "| Size | $SIZE bytes |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload unsigned IPA
