@@ -3,7 +3,7 @@
 An offline, private iPhone app for tracking income, expenses, receipts and bills.
 It is built with SwiftUI, SwiftData, Swift Charts and Apple Vision, targets iOS 17+, and uses no third-party packages, accounts or network access.
 
-> **Build status:** GitHub Actions compiles the app and runs 132 tests on every push (all passing). An unsigned IPA is produced for re-signing.
+> **Build status:** GitHub Actions compiles the app and runs 153 tests on every push (all passing). An unsigned IPA is produced for re-signing.
 > See [docs/BUILD_STATUS.md](docs/BUILD_STATUS.md) for what has been verified and what hasn't.
 
 ## Repository layout
@@ -83,6 +83,7 @@ Make a backup before every refresh or update, at least until on-device testing i
 - [ ] Add, edit and delete a transaction; force-close (swipe up in the app switcher), reopen: changes are kept
 - [ ] Turn on **Airplane Mode**: scan a receipt (camera and Photos), view charts and reports, export a backup. Everything works offline
 - [ ] Bills: add, record payment, skip; budgets show progress
+- [ ] Settings → Backup & Data → Spreadsheet: export transactions as CSV and open it in Excel; import a bank statement CSV, check the preview, import, then import it again: nothing is added twice
 - [ ] Face ID / passcode lock (Settings → Security): locks after leaving the app; the app switcher shows the privacy screen
 - [ ] Export a backup, re-sign and reinstall with Sideloadly (step 4): data is still there
 - [ ] Larger text sizes, VoiceOver and dark mode look right

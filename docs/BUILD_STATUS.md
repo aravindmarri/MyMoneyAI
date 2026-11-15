@@ -1,24 +1,24 @@
 # Build Status
 
-_Last updated: 2026-11-15 (CI run #14)_
+_Last updated: 2026-11-15 (CI run #16)_
 
 Development happens on Windows. iOS builds and tests run on GitHub Actions (`.github/workflows/ios-build.yml`, `macos-15` runner, XcodeGen).
 
-## Summary (CI run #14, commit `e75e5ae`)
+## Summary (CI run #16, commit `d24c455`)
 
 | Check | Result |
 |---|---|
 | iOS Simulator compile | **Pass** (GitHub Actions) |
-| Automated tests | **Pass: 132 of 132** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
-| Unsigned device archive | **Pass.** `MyMoneyAI-unsigned-ipa` artifact (812,940 bytes, expires 2026-11-29) |
-| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.mymoneyai`, version 1.0 (14), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
+| Automated tests | **Pass: 153 of 153** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
+| Unsigned device archive | **Pass.** `MyMoneyAI-unsigned-ipa` artifact (922,086 bytes, kept for 14 days) |
+| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.mymoneyai`, version 1.0 (16), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
 | Network-use checks | **Pass.** Static source scan, linked-framework check on the IPA, and a runtime test showing OCR, calculations and backups make no requests |
 | Run on a real iPhone | **Not done.** Install with Sideloadly and a free Apple Account: see README → INSTALL_ON_IPHONE |
 | Manual UI check (layout, VoiceOver, Dynamic Type, dark mode) | **Not done** |
 | Airplane-mode check on a device | **Not done.** The code makes no network calls, and Vision OCR ran offline in the simulator test |
-| Static source checks (`python tools/check_sources.py`) | **Pass:** 67 Swift files |
+| Static source checks (`python tools/check_sources.py`) | **Pass:** 71 Swift files |
 
-Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43697699631
+Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43773069283
 
 ### CI history
 
@@ -36,6 +36,7 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43697699631
 | #12 | `aea4b18` | Fail | Phase 6: 124 of 125; a test read category kinds before adding a custom category (test bug). IPA job passed |
 | #13 | `bd249b2` | Fail | A new test expression was too slow to type-check. IPA job passed and the IPA was verified |
 | #14 | `e75e5ae` | **Pass** | 132 of 132 tests (Phases 1–6 and install readiness); IPA verified |
+| #16 | `d24c455` | **Pass** | 153 of 153 tests (Phase 7: CSV import and export); IPA verified |
 
 ## About the unsigned IPA
 
@@ -87,11 +88,17 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43697699631
 - Delete All Data (type DELETE to confirm) and cleanup of receipts left behind by deleted transactions
 - Accessibility: every icon-only button has a label; budget progress and chart rows have spoken values
 
+**Phase 7:** CSV import and export
+- Export every transaction as CSV (date, type, refund, title, merchant, category, payment method, positive and signed amounts, currency, notes, source). Text that a spreadsheet would run as a formula is prefixed with an apostrophe. The file isn't encrypted and the app says so
+- Import bank statements: RFC 4180 reader (quotes, embedded line breaks, BOM, comma/semicolon/tab, Windows-1252 fallback), columns guessed from header names, one amount column or separate debit and credit columns, date format detected from the values (the region breaks ties), month-name dates
+- Every row is previewed as new, already in the app, or unreadable (with the reason). A row is "already in the app" when a transaction on the same day has the same type, amount and a matching description; each existing transaction matches only one row. Re-importing the same file adds nothing
+- Categories come from a category column by name and type, otherwise from the existing suggestion engine. The statement's account and currency apply to every row. All rows are saved together or not at all
+
 **Install readiness**
 - Stable bundle ID `io.github.aravindmarri.mymoneyai`, so a re-signed build installs over the previous one and keeps its data. The build number is the CI run number
 - CI unzips the IPA and fails unless it is the real arm64 iPhone device build
 
-## Tests (132, all passing in CI run #14)
+## Tests (153, all passing in CI run #16)
 
 | File | Count | Covers |
 |---|---|---|
@@ -105,9 +112,10 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43697699631
 | `BillBudgetTests.swift` | 16 | Due status, next due dates (month ends, leap years, custom intervals), bill validation, payment candidates, budget progress and thresholds; SwiftData: recording or linking a payment creates exactly one expense, failed links don't advance the bill, deleting a bill keeps payments, budget rules |
 | `PrivacyDataTests.swift` | 11 | PBKDF2 published test vectors; encryption round trip; wrong password; tampered data and header; weak passwords; app-lock logic; full backup round trip onto a fresh install; clashing budget; invalid backups import nothing; delete all data; receipt cleanup |
 | `InstallReadinessTests.swift` | 7 | On-disk store survives close and reopen (force-close); repeated launches add nothing; schema-version guard; store opens through the migration plan; a frozen v1 backup keeps importing; network detector works; OCR, calculations and backups make no requests |
+| `CSVTests.swift` | 21 | CSV reading (quotes, line numbers, delimiters, encodings, broken files) and writing; date orders, month names and format detection; amount formats (signs, brackets, CR/DR, symbols, grouping); column guessing; single and debit/credit statements; invalid rows; category matching; duplicates; export format; export then import restores every field; SwiftData save and totals |
 | `ReceiptStorageTests.swift` | 8 | File save, load and delete; path-traversal rejection; orphan cleanup; linking receipts to new or existing transactions; failed saves write nothing; receipts aren't counted as spending |
 
-Xcode counts parameterized cases separately, which is why the total is 132. All tests use synthetic data only.
+Xcode counts parameterized cases separately, which is why the total is 153. All tests use synthetic data only.
 
 ## Known issues and risks
 

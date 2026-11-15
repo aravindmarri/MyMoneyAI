@@ -9,4 +9,6 @@
 | 5. Bills & budgets | Bill editor, due status, mark paid (creates or links one transaction), budget progress | **Done:** CI build and tests passing |
 | 6. Privacy & quality | Face ID / passcode lock, privacy screen, encrypted export/import (PBKDF2 + AES-GCM), delete all data, accessibility audit, offline verification | **Done:** CI build and tests passing (on-device check pending) |
 
-**Status:** Phases 1–6 compile and pass 132 automated tests on GitHub Actions (run #14). Manual on-device testing is still pending.
+| 7. CSV import & export | Bank statement import with column mapping, preview and duplicate skipping; transaction export for spreadsheets | **Done:** CI build and tests passing |
+
+**Status:** Phases 1–7 compile and pass 153 automated tests on GitHub Actions (run #16). Manual on-device testing is still pending.
