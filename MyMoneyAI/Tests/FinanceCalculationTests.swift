@@ -67,6 +67,37 @@ import Testing
         #expect(s.excludedOtherCurrencyCount == 1)
     }
 
+    @Test func cardPurchaseThisMonthRepaidNextMonthCountsOnlyWhenPurchased() {
+        let purchase = tx(.expense, 30_000, date(2024, 1, 28))
+        let repayment = tx(.transfer, 30_000, date(2024, 2, 15))
+        let jan = service.summary(of: [purchase, repayment], in: calendar.monthRange(containing: date(2024, 1, 1)), currencyCode: "USD")
+        let feb = service.summary(of: [purchase, repayment], in: calendar.monthRange(containing: date(2024, 2, 1)), currencyCode: "USD")
+        #expect(jan.expenseMinorUnits == 30_000)
+        #expect(feb.expenseMinorUnits == 0)
+    }
+
+    @Test func incomeReversalReducesIncome() {
+        let s = service.summary(of: [tx(.income, 100_000, date(2024, 3, 1)), tx(.income, 10_000, date(2024, 3, 2), refund: true)],
+                                in: calendar.monthRange(containing: date(2024, 3, 1)), currencyCode: "USD")
+        #expect(s.incomeMinorUnits == 90_000)
+    }
+
+    @Test func usesTransactionDateNotCreatedAt() {
+        var r = tx(.expense, 500, date(2024, 2, 20))
+        r.createdAt = date(2024, 3, 5)   // entered late
+        let feb = service.summary(of: [r], in: calendar.monthRange(containing: date(2024, 2, 1)), currencyCode: "USD")
+        #expect(feb.expenseMinorUnits == 500)
+    }
+
+    @Test func monthBoundaryAcrossDSTAndTimeZones() {
+        var tokyo = Calendar(identifier: .gregorian)
+        tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        // 2024-03-31 23:30 in New York is already April 1 in Tokyo.
+        let instant = date(2024, 3, 31, 23).addingTimeInterval(30 * 60)
+        #expect(calendar.monthRange(containing: date(2024, 3, 15)).contains(instant))
+        #expect(tokyo.monthRange(containing: instant).start == tokyo.date(from: DateComponents(year: 2024, month: 4, day: 1))!)
+    }
+
     @Test func noIncomeGivesNilRatio() {
         let s = service.summary(of: [tx(.expense, 1, date(2024, 3, 2))], in: calendar.monthRange(containing: date(2024, 3, 1)), currencyCode: "USD")
         #expect(s.expenseToIncomeRatio == nil)

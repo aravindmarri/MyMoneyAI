@@ -8,8 +8,8 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section("Organize") {
-                    NavigationLink { CategoriesListView() } label: { Label("Categories", systemImage: "square.grid.2x2") }
-                    NavigationLink { PaymentMethodsListView() } label: { Label("Payment Methods", systemImage: "creditcard") }
+                    NavigationLink { CategoriesView() } label: { Label("Categories", systemImage: "square.grid.2x2") }
+                    NavigationLink { PaymentMethodsView() } label: { Label("Payment Methods", systemImage: "creditcard") }
                     NavigationLink { BillsListView() } label: { Label("Recurring Bills", systemImage: "calendar.badge.clock") }
                     NavigationLink { BudgetsListView() } label: { Label("Budgets", systemImage: "gauge.with.dots.needle.33percent") }
                 }
@@ -39,45 +39,6 @@ private struct PreferencesSection: View {
                 ForEach(AppearancePreference.allCases) { Text($0.displayName).tag($0) }
             }
         }
-    }
-}
-
-struct CategoriesListView: View {
-    @Query(sort: \SpendingCategory.displayOrder) private var categories: [SpendingCategory]
-
-    var body: some View {
-        List {
-            ForEach(CategoryKind.allCases.reversed()) { kind in
-                Section(kind.displayName) {
-                    ForEach(categories.filter { $0.kind == kind }) { c in
-                        Label {
-                            Text(c.name)
-                        } icon: {
-                            Image(systemName: c.symbol).foregroundStyle(Theme.color(c.colorIdentifier))
-                        }
-                    }
-                }
-            }
-        }
-        .navigationTitle("Categories")
-    }
-}
-
-struct PaymentMethodsListView: View {
-    @Query(sort: \PaymentMethod.createdAt) private var methods: [PaymentMethod]
-
-    var body: some View {
-        Group {
-            if methods.isEmpty {
-                EmptyStateView(title: "No Payment Methods", systemImage: "creditcard",
-                               message: "Add cash, cards or bank accounts to record how you paid. Only a nickname and optional last four digits are stored.")
-            } else {
-                List(methods) { m in
-                    Label(m.lastFourDigits.map { "\(m.name) •••• \($0)" } ?? m.name, systemImage: m.type.symbol)
-                }
-            }
-        }
-        .navigationTitle("Payment Methods")
     }
 }
 

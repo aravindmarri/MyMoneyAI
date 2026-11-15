@@ -11,11 +11,15 @@ enum AppTab: Hashable {
 final class AppContainer {
     let persistence: PersistenceService
     let finance: FinanceCalculationService
+    let transactions: TransactionRepository
+    let referenceData: ReferenceDataRepository
     var selectedTab: AppTab = .home
 
     init(persistence: PersistenceService, finance: FinanceCalculationService = FinanceCalculationService()) {
         self.persistence = persistence
         self.finance = finance
+        self.transactions = TransactionRepository(context: persistence.context)
+        self.referenceData = ReferenceDataRepository(context: persistence.context)
     }
 
     static func live() throws -> AppContainer {

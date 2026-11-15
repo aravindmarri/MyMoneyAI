@@ -8,6 +8,7 @@ struct DashboardView: View {
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }, sort: \RecurringBill.nextDueDate) private var bills: [RecurringBill]
     @Query private var settings: [AppSettings]
     @State private var model = DashboardViewModel()
+    @State private var editorRoute: TransactionEditorRoute?
 
     private var currency: String { settings.first?.preferredCurrencyCode ?? CurrencyMath.defaultCode }
 
@@ -36,6 +37,7 @@ struct DashboardView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Home")
+            .sheet(item: $editorRoute) { TransactionEditorView(route: $0) }
         }
     }
 
@@ -71,8 +73,8 @@ struct DashboardView: View {
 
     private var quickActions: some View {
         HStack(spacing: 12) {
-            Button { app.selectedTab = .transactions } label: {
-                Label("Transactions", systemImage: "plus.circle.fill").frame(maxWidth: .infinity)
+            Button { editorRoute = .new(currencyCode: currency) } label: {
+                Label("Add", systemImage: "plus.circle.fill").frame(maxWidth: .infinity)
             }
             Button { app.selectedTab = .scan } label: {
                 Label("Import Receipt", systemImage: "doc.viewfinder").frame(maxWidth: .infinity)

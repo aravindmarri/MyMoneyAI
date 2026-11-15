@@ -30,6 +30,44 @@ enum CurrencyMath {
         return n.int64Value
     }
 
+    /// Parses user-typed amounts such as "12.50", "1,234.56", "1.234,56" or "12,5".
+    /// Returns nil for empty input, negative signs, non-numeric text, or more fraction
+    /// digits than the currency allows (e.g. "1.234" for USD is read as grouping → 1234.00).
+    static func parse(_ text: String, currencyCode: String) -> Int64? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.contains("-") else { return nil }
+        let s = trimmed.filter { ($0.isASCII && $0.isNumber) || $0 == "." || $0 == "," }
+        guard s.contains(where: { $0.isNumber }) else { return nil }
+        let exp = exponent(for: currencyCode)
+
+        var decimalSeparator: Character?
+        let lastDot = s.lastIndex(of: "."), lastComma = s.lastIndex(of: ",")
+        if let d = lastDot, let c = lastComma {
+            decimalSeparator = d > c ? "." : ","
+        } else if let sep = lastDot ?? lastComma {
+            let sepChar = s[sep]
+            let occurrences = s.filter { $0 == sepChar }.count
+            let fractionDigits = s.distance(from: s.index(after: sep), to: s.endIndex)
+            if occurrences == 1 && (fractionDigits != 3 || exp == 3) { decimalSeparator = sepChar }
+        }
+
+        // Keep digits; convert only the final decimal separator to "."; drop grouping separators.
+        var normalized = ""
+        let decimalIndex = decimalSeparator.flatMap { s.lastIndex(of: $0) }
+        for i in s.indices {
+            if i == decimalIndex { normalized.append(".") }
+            else if s[i].isNumber { normalized.append(s[i]) }
+        }
+        if let dot = normalized.firstIndex(of: ".") {
+            let frac = normalized.distance(from: normalized.index(after: dot), to: normalized.endIndex)
+            if frac > exp { return nil }
+        }
+        if normalized.hasSuffix(".") { normalized.removeLast() }
+        guard !normalized.isEmpty,
+              let value = Decimal(string: normalized, locale: Locale(identifier: "en_US_POSIX")) else { return nil }
+        return minorUnits(from: value, currencyCode: currencyCode)
+    }
+
     static func format(_ minor: Int64, currencyCode: String, locale: Locale = .current) -> String {
         decimal(fromMinorUnits: minor, currencyCode: currencyCode)
             .formatted(.currency(code: currencyCode).locale(locale))

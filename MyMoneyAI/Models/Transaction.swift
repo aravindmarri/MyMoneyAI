@@ -54,13 +54,17 @@ struct TransactionRecord: Codable, Hashable, Sendable, Identifiable {
     var isVerified: Bool
     var transferGroupId: UUID?
     var isRefund: Bool
+    /// For transfers: the account receiving the money (e.g. the credit card being repaid).
+    /// `paymentMethodId` is the source account.
+    var transferDestinationPaymentMethodId: UUID?
 
     init(id: UUID = UUID(), transactionDate: Date, createdAt: Date = .now, updatedAt: Date = .now,
          amountMinorUnits: Int64, currencyCode: String = CurrencyMath.defaultCode, merchant: String? = nil,
          title: String, notes: String? = nil, transactionType: TransactionType, categoryId: UUID? = nil,
          paymentMethodId: UUID? = nil, receiptId: UUID? = nil, recurringBillId: UUID? = nil,
          source: TransactionSource = .manual, isVerified: Bool = true, transferGroupId: UUID? = nil,
-         isRefund: Bool = false) {
+         isRefund: Bool = false, transferDestinationPaymentMethodId: UUID? = nil) {
+        self.transferDestinationPaymentMethodId = transferDestinationPaymentMethodId
         self.id = id; self.transactionDate = transactionDate; self.createdAt = createdAt; self.updatedAt = updatedAt
         self.amountMinorUnits = amountMinorUnits; self.currencyCode = currencyCode; self.merchant = merchant
         self.title = title; self.notes = notes; self.transactionType = transactionType; self.categoryId = categoryId
@@ -90,8 +94,10 @@ final class MoneyTransaction {
     var isVerified: Bool
     var transferGroupId: UUID?
     var isRefund: Bool = false
+    var transferDestinationPaymentMethodId: UUID? = nil
 
     init(record r: TransactionRecord) {
+        transferDestinationPaymentMethodId = r.transferDestinationPaymentMethodId
         id = r.id; transactionDate = r.transactionDate; createdAt = r.createdAt; updatedAt = r.updatedAt
         amountMinorUnits = r.amountMinorUnits; currencyCode = r.currencyCode; merchant = r.merchant
         title = r.title; notes = r.notes; transactionTypeRaw = r.transactionType.rawValue
@@ -111,7 +117,18 @@ final class MoneyTransaction {
                           amountMinorUnits: amountMinorUnits, currencyCode: currencyCode, merchant: merchant,
                           title: title, notes: notes, transactionType: transactionType, categoryId: categoryId,
                           paymentMethodId: paymentMethodId, receiptId: receiptId, recurringBillId: recurringBillId,
-                          source: source, isVerified: isVerified, transferGroupId: transferGroupId, isRefund: isRefund)
+                          source: source, isVerified: isVerified, transferGroupId: transferGroupId, isRefund: isRefund,
+                          transferDestinationPaymentMethodId: transferDestinationPaymentMethodId)
+    }
+
+    /// Applies editable fields. `id`, `createdAt` and `source` are never changed by an edit.
+    func apply(_ r: TransactionRecord) {
+        transactionDate = r.transactionDate; amountMinorUnits = r.amountMinorUnits; currencyCode = r.currencyCode
+        merchant = r.merchant; title = r.title; notes = r.notes; transactionTypeRaw = r.transactionType.rawValue
+        categoryId = r.categoryId; paymentMethodId = r.paymentMethodId; receiptId = r.receiptId
+        recurringBillId = r.recurringBillId; isVerified = r.isVerified; transferGroupId = r.transferGroupId
+        isRefund = r.isRefund; transferDestinationPaymentMethodId = r.transferDestinationPaymentMethodId
+        updatedAt = r.updatedAt
     }
 }
 
