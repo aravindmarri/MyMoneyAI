@@ -45,6 +45,19 @@ def main(paths) -> None:
                         seen.add(key)
                         errors.append((f"MyMoneyAI/Tests/{os.path.basename(t['file'])}", t["line"], "1",
                                        f"{t['name']}: {t['msg']}"))
+    if not errors:
+        # Fallback: errors without file:line:col (linker, build system, crashes).
+        for path in paths:
+            if not os.path.exists(path):
+                continue
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for raw in f:
+                    line = raw.strip()
+                    if re.search(r"\berror\b[:]|\bfatal\b|Undefined symbol|failed with a nonzero exit code", line, re.I):
+                        key = ("", "", line)
+                        if key not in seen:
+                            seen.add(key)
+                            errors.append((os.path.basename(path), "1", "1", line[:900]))
     for rel, line, col, msg in errors[OFFSET:OFFSET + PAGE]:
         print(f"::error file={rel},line={line},col={col}::{esc(msg)}")
     print(f"{len(errors)} unique error(s) found")
