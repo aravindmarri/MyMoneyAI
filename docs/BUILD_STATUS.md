@@ -1,79 +1,100 @@
 # Build Status
 
-_Last updated: 2026-11-15 (Windows development machine, no Xcode)_
+_Last updated: 2026-11-15_
 
-## Summary
+Development happens on Windows. iOS builds and tests run on GitHub Actions (`.github/workflows/ios-build.yml`, `macos-15` runner, XcodeGen).
+
+## Summary (CI run #8, commit `045d4e8`)
 
 | Check | Result |
 |---|---|
-| iOS compile (Xcode) | **Not run.** No Mac is available. |
-| Unit tests (Xcode) | **Not run.** |
-| Simulator / device run | **Not run.** |
-| Offline (airplane mode) test | **Not run.** The code has no network calls, but this is untested on a device. |
-| Static source checks (`python tools/check_sources.py`) | **Pass:** 41 Swift files, balanced brackets, no duplicate types. |
+| iOS Simulator compile | **Pass** (GitHub Actions) |
+| Automated tests | **Pass: 98 of 98** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
+| Unsigned device archive | **Pass.** `MyMoneyAI-unsigned-ipa` artifact (570 KB) |
+| Run on a real iPhone | **Not done.** Needs re-signing with your Apple Account (see below) |
+| Manual UI check (layout, VoiceOver, Dynamic Type, dark mode) | **Not done** |
+| Airplane-mode check on a device | **Not done.** The code makes no network calls, and Vision OCR ran offline in the simulator test |
+| Static source checks (`python tools/check_sources.py`) | **Pass:** 53 Swift files |
 
-Static checks are not compilation. Expect some compiler errors on the first Mac build.
+Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43688716668
 
-## Implemented features (source written, not yet compiled)
+### CI history
 
-**Phase 1**
-- XcodeGen project (iOS 17, iPhone, portrait) with app and unit-test targets
-- SwiftData schema V1 and migration plan, CloudKit disabled, store protected with iOS Data Protection
-- First-launch setup creates only the default categories and settings, with no sample transactions
-- Five tabs: Home, Transactions, Scan, Reports, Settings, each with an empty state
-- Home: month navigation, income, expenses, net cash flow, spent-of-income ratio, recent transactions, upcoming bills
-- Reports: year-to-date summary
-- Settings: currency and appearance preferences, privacy page
+| Run | Commit | Result | Notes |
+|---|---|---|---|
+| #2 | `bbd8fcd` | Fail | Missing `TransactionType.categoryKind`; the editor body was too complex to type-check |
+| #3 | `e1d33a9` | **Pass** | First successful build; unsigned IPA produced |
+| #4 | `947bd8d` | **Pass** | 60 of 60 tests (Phases 1–3) |
+| #5 | `1e5dce1` | Fail | Tests called a main-actor method from a nonisolated context |
+| #6 | `7e9f320` | Fail | Nested `#require` macro (the error wasn't annotated yet) |
+| #7 | `67473bf` | Fail | Same error, now annotated |
+| #8 | `045d4e8` | **Pass** | 98 of 98 tests (Phases 1–4) |
 
-**Phase 2**
-- Add, edit and delete transactions (delete asks for confirmation); duplicate opens an unsaved copy
-- Search by title or merchant; filter by type, category, payment method and date range
-- Transfers record both the source and destination accounts
-- Credit-card repayment protection: the editor warns when an expense looks like a card payment and offers to record it as a Transfer
-- Category management: create and edit (name, icon, color); deleting a category in use requires moving its transactions
-- Payment-method management: create and edit; Apple Pay can link to a card; only the last four digits are stored; methods with history can be deactivated but not deleted
-- Amount entry accepts "12.50", "1,234.56", "1.234,56" and "12,5"
+## About the unsigned IPA
 
-**Phase 3**
-- Dashboard: spending-by-category donut and a 6-month income vs expenses chart for the selected month
-- Reports: period picker (this month, last month, last 3 or 6 months, year to date, custom dates)
-- Reports: income vs expenses by month, spending by category, spending by payment method, top merchants, daily spending trend
-- Reports: this month vs last month comparison and a year-to-date summary
-- Charts: accessibility labels on every mark plus a "Show data" text table; tap a month on the cash-flow chart to see its net
-- Chart values use `Double` for drawing only; all calculations stay in integer minor units
+`MyMoneyAI-unsigned-ipa` is **not signed and cannot be installed on an iPhone as-is.** It must first be re-signed with your own Apple Account, for example with Sideloadly or AltStore. With a free Apple Account, apps signed this way expire after 7 days and must be re-signed. CI artifacts are kept for 14 days.
 
-## Tests written (60 functions; none executed yet)
+## Implemented features (compiled and covered by passing CI tests where noted)
 
-| File | Covers |
-|---|---|
-| `FinanceCalculationTests.swift` (14) | Income, expense and net totals; transfers and adjustments excluded; refunds and income reversals; month boundaries; leap year; time zones; transaction date vs record date; card purchase and repayment across months; excluded currencies; rounding; last-four sanitizing |
-| `TransactionTests.swift` (20) | Draft validation; editing keeps the id and creation date; duplicating drops receipt and bill links; transfer field clearing; amount parsing; filters; repayment detector |
-| `RepositoryTests.swift` (9) | SwiftData add, edit, delete and duplicate; category reassignment rules; budget deactivation; in-use payment methods; end-to-end card-repayment double-count check |
-| `ReportCalculationTests.swift` (14) | Category, payment-method and merchant breakdowns net of refunds; breakdowns match summary totals; transfers, income and other currencies excluded; daily series including leap year and DST; monthly flows across year boundaries and clipped ranges; month-over-month change; year-to-date and custom ranges; report presets |
-| `PersistenceTests.swift` (3) | First-launch setup runs only once and adds no sample data; save and reload; default settings |
+**Phase 1:** foundation
+- XcodeGen project (iOS 17, iPhone), SwiftData schema V1 with a migration plan, CloudKit off, store protected with iOS Data Protection
+- First launch creates only the default categories and settings, with no sample data
+- Five tabs with empty states
 
-## Tests not executable on Windows
+**Phase 2:** manual transactions
+- Add, edit, delete (with confirmation), and duplicate (opens an unsaved copy)
+- Search and filters
+- Category and payment-method management; deleting a category in use requires reassigning its transactions; only the last four card digits are stored
+- Credit-card repayments are recorded as transfers, with a warning when one is entered as an expense
 
-All of them. They need Xcode (Swift Testing, XCTest and SwiftData on the iOS Simulator).
+**Phase 3:** dashboard and reports
+- Category donut and 6-month cash-flow chart on the dashboard
+- Reports: period presets and custom dates, monthly income vs expenses, category, payment-method and merchant breakdowns, daily trend, month-over-month comparison, year to date
+- Each chart has accessibility labels and a "Show data" table
+
+**Phase 4:** offline receipt scanning
+- Import from Photos (including screenshots) or the camera
+- Images are re-rendered and re-encoded, which strips metadata including GPS
+- On-device Apple Vision text recognition, with labels and prices from separate columns put back on one line
+- Deterministic parser for merchant, date, total, tax, discount and currency, each with a confidence level. It handles change and cash lines, labels and amounts on separate lines, discounts before or after the subtotal, tax rates, European number formats, and OCR misreads such as "T0TAL"
+- Review screen: the image next to editable fields, with uncertain values flagged; nothing is saved until you tap Save; manual entry if OCR finds no text
+- Duplicate warnings for the same or a similar image (perceptual hash) and for an expense with the same amount, day and merchant. You can save anyway or attach the receipt to the existing expense
+- Images are stored in Application Support with complete file protection; image paths are validated, and files left by an interrupted save are cleaned up
+- Category suggestions from your past choices for the merchant, then a built-in merchant directory, then header keywords
+- Receipts appear on the transaction detail screen and are never counted as separate spending
+
+## Tests (98, all passing in CI run #8)
+
+| File | Count | Covers |
+|---|---|---|
+| `FinanceCalculationTests.swift` | 14 | Totals, transfers, refunds, month boundaries, leap year, time zones, card double counting, currencies, rounding |
+| `TransactionTests.swift` | 20 (+ parameterized cases) | Draft validation, edit and duplicate rules, amount parsing, filters, repayment detector |
+| `RepositoryTests.swift` | 9 | SwiftData add, edit, delete and duplicate; category reassignment; payment-method rules; card double counting end to end |
+| `ReportCalculationTests.swift` | 14 | Breakdowns, daily series (leap year, DST), monthly flows, month-over-month, ranges |
+| `PersistenceTests.swift` | 3 | First-launch setup, save and reload, default settings |
+| `ReceiptParserTests.swift` | 18 (+ parameterized cases) | Synthetic receipts: standard, cash and change, split columns, discounts, grand total and tip, fallbacks, number formats, dates, merchants, currency |
+| `ReceiptServicesTests.swift` | 12 | OCR line assembly; **real Vision OCR on a rendered synthetic receipt**; fingerprints; duplicate detection; category suggestions |
+| `ReceiptStorageTests.swift` | 8 | File save, load and delete; path-traversal rejection; orphan cleanup; linking receipts to new or existing transactions; failed saves write nothing; receipts aren't counted as spending |
+
+Xcode counts parameterized cases separately, which is why the total is 98. All tests use synthetic data only.
 
 ## Known issues and risks
 
-- None of the code has been compiled. API mismatches or type-checker timeouts are likely in the larger SwiftUI views.
-- Swift 5 language mode is used with `SWIFT_STRICT_CONCURRENCY=complete`. Concurrency diagnostics show up as warnings and should be fixed before moving to Swift 6 mode.
-- The views use `@Query` with in-memory filtering. That's fine for V1 data sizes but should be profiled with more than 10,000 transactions.
-- Deleting a transaction keeps its receipt record. Receipt file cleanup is planned for Phase 4.
-- Swift Charts layout (legend sizing, annotation clipping) is untested visually.
-- Scan, Bills and Budgets screens are read-only placeholders until Phases 4–5. The Scan screen says import isn't available yet.
-- The development team and bundle ID (`com.example.mymoneyai`) must be set before installing on a device.
+- The app hasn't been run on a physical iPhone yet. Camera capture can only be tested on a device.
+- The UI hasn't been reviewed by eye: chart layout, the largest Dynamic Type sizes, VoiceOver flow and dark mode.
+- Receipt parsing is rule-based. Unusual layouts will need manual correction, which the review screen supports.
+- Deleting a transaction keeps its receipt record and image. A cleanup option is planned for Phase 6.
+- Swift 5 language mode with complete strict-concurrency checking. Warnings should be cleared before moving to Swift 6 mode.
+- Bills and Budgets screens are still read-only until Phase 5.
+- Bundle ID `com.example.mymoneyai` must be changed to something unique to you when re-signing.
 
-## Mac build requirements
+## Building
 
-- macOS with Xcode 16 or later, iOS 17+ simulator runtime
-- XcodeGen (`brew install xcodegen`)
-- `xcodegen generate`, then build and test the `MyMoneyAI` scheme (see README)
+- **CI:** every push to `main` builds, runs the tests and produces the unsigned IPA.
+- **Mac (optional):** Xcode 16+, `brew install xcodegen`, `xcodegen generate`, then build and test the `MyMoneyAI` scheme.
 
 ## Next tasks
 
-1. **On a Mac:** generate the project, fix any compile errors, run all tests, and record the results here.
-2. Check the charts on a device: Dynamic Type at the largest sizes, VoiceOver, dark mode.
-3. Phase 4: receipt import and OCR.
+1. Re-sign the IPA with a free Apple Account and do a manual test pass on an iPhone, including airplane mode and the camera.
+2. Phase 5: recurring bills and budgets.
+3. Phase 6: app lock, encrypted export/import, delete all data, accessibility audit.
