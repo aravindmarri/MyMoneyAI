@@ -68,6 +68,11 @@ enum CurrencyMath {
         return minorUnits(from: value, currencyCode: currencyCode)
     }
 
+    /// Double for chart plotting ONLY. Never use for arithmetic or stored values.
+    static func plotValue(_ minor: Int64, currencyCode: String) -> Double {
+        NSDecimalNumber(decimal: decimal(fromMinorUnits: minor, currencyCode: currencyCode)).doubleValue
+    }
+
     static func format(_ minor: Int64, currencyCode: String, locale: Locale = .current) -> String {
         decimal(fromMinorUnits: minor, currencyCode: currencyCode)
             .formatted(.currency(code: currencyCode).locale(locale))

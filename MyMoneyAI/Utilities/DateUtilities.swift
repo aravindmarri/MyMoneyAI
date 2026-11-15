@@ -20,6 +20,18 @@ extension Calendar {
         return DateRange(start: start, end: self.date(byAdding: .day, value: 1, to: start) ?? start)
     }
 
+    /// From January 1 of the current year through the end of today.
+    func yearToDateRange(now: Date) -> DateRange {
+        let start = dateInterval(of: .year, for: now)?.start ?? startOfDay(for: now)
+        return DateRange(start: start, end: dayRange(containing: now).end)
+    }
+
+    /// Whole days from `from` through `through` (inclusive), normalized so start ≤ end.
+    func range(fromDay from: Date, throughDay through: Date) -> DateRange {
+        let a = startOfDay(for: min(from, through))
+        return DateRange(start: a, end: dayRange(containing: max(from, through)).end)
+    }
+
     func addingMonths(_ months: Int, to date: Date) -> Date {
         self.date(byAdding: .month, value: months, to: date) ?? date
     }
