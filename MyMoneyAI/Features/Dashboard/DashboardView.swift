@@ -13,7 +13,8 @@ struct DashboardView: View {
     private var currency: String { settings.first?.preferredCurrencyCode ?? CurrencyMath.defaultCode }
 
     var body: some View {
-        let summary = model.summary(records: transactions.map(\.record), currencyCode: currency, finance: app.finance)
+        let records = transactions.map(\.record)
+        let summary = model.summary(records: records, currencyCode: currency, finance: app.finance)
         let monthTransactions = transactions.filter { model.range.contains($0.transactionDate) }
         let categoryByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
 
@@ -29,6 +30,8 @@ struct DashboardView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     quickActions
+                    spendingSection(records: records, categories: categories)
+                    cashFlowSection(records: records)
                     recentSection(monthTransactions, categoryByID: categoryByID)
                     billsSection
                 }
@@ -82,6 +85,36 @@ struct DashboardView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+    }
+
+    private func spendingSection(records: [TransactionRecord], categories: [SpendingCategory]) -> some View {
+        let totals = app.finance.expensesByCategory(records, in: model.range, currencyCode: currency)
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Spending by Category").font(.headline)
+            if totals.isEmpty {
+                Text("No spending recorded for \(model.monthTitle).")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            } else {
+                CategoryChart(slices: ChartSlices.categories(totals, categories: categories), currencyCode: currency)
+            }
+        }
+        .card()
+    }
+
+    private func cashFlowSection(records: [TransactionRecord]) -> some View {
+        let flows = app.finance.monthlyFlows(records, endingWith: model.selectedMonth, count: 6, currencyCode: currency)
+        let hasData = flows.contains { $0.incomeMinorUnits != 0 || $0.expenseMinorUnits != 0 }
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Income vs. Expenses").font(.headline)
+            Text("Last 6 months").font(.caption).foregroundStyle(.secondary)
+            if hasData {
+                MonthlyCashFlowChart(flows: flows, currencyCode: currency)
+            } else {
+                Text("No income or expenses in the last 6 months.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        .card()
     }
 
     @ViewBuilder
