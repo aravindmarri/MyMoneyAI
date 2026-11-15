@@ -113,9 +113,20 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Publish test counts
+        if: always()
+        run: |
+          [ -d build/TestResults.xcresult ] || { echo "::warning::No test results bundle"; exit 0; }
+          xcrun xcresulttool get test-results summary --path build/TestResults.xcresult --format json > build/summary.json || exit 0
+          python3 -c '
+          import json
+          s = json.load(open("build/summary.json"))
+          keys = ["result", "totalTestCount", "passedTests", "failedTests", "skippedTests", "expectedFailures"]
+          print("::notice title=Test results::" + ", ".join(f"{k}={s.get(k)}" for k in keys))'
+
       - name: Upload logs and test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-and-test-results
           path: |
@@ -168,7 +179,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload unsigned IPA
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: MyMoneyAI-unsigned-ipa
           path: build/MyMoneyAI-unsigned.ipa
@@ -176,7 +187,7 @@ jobs:
 
       - name: Upload archive log
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: archive-log
           path: build/logs
