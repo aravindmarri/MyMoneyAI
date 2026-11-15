@@ -11,6 +11,7 @@ struct TransactionDetailView: View {
     @State private var editorRoute: TransactionEditorRoute?
     @State private var confirmDelete = false
     @State private var errorMessage: String?
+    @State private var showReceipt = false
 
     init(transactionID: UUID) {
         _matches = Query(filter: #Predicate<MoneyTransaction> { $0.id == transactionID })
@@ -41,6 +42,9 @@ struct TransactionDetailView: View {
         return List {
             headerSection(t)
             detailsSection(t, category: category)
+            if let receiptId = t.receiptId {
+                receiptSection(receiptId)
+            }
             if let notes = t.notes, !notes.isEmpty {
                 Section("Notes") { Text(notes) }
             }
@@ -105,6 +109,33 @@ struct TransactionDetailView: View {
             LabeledContent("To", value: methodName(t.transferDestinationPaymentMethodId) ?? notSpecified)
         } else {
             LabeledContent("Payment", value: methodName(t.paymentMethodId) ?? notSpecified)
+        }
+    }
+
+    private func receiptSection(_ receiptId: UUID) -> some View {
+        let image = app.receipts.imageData(forReceipt: receiptId).flatMap(UIImage.init(data:))
+        return Section("Receipt") {
+            if let image {
+                Button { showReceipt = true } label: {
+                    Image(uiImage: image).resizable().scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: 220)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Receipt image. Double-tap to enlarge.")
+                .fullScreenCover(isPresented: $showReceipt) {
+                    NavigationStack {
+                        ScrollView([.vertical, .horizontal]) {
+                            Image(uiImage: image).resizable().scaledToFit().frame(minWidth: 300)
+                        }
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) { Button("Done") { showReceipt = false } }
+                        }
+                    }
+                }
+            } else {
+                Label("Receipt image unavailable", systemImage: "photo.badge.exclamationmark")
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

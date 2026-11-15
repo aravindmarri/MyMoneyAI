@@ -7,9 +7,11 @@ enum RepositoryError: Error, Equatable, LocalizedError {
     case invalidReassignmentTarget
     case paymentMethodInUse(transactions: Int)
     case invalidName
+    case receiptAlreadyAttached
 
     var errorDescription: String? {
         switch self {
+        case .receiptAlreadyAttached: "That transaction already has a receipt."
         case .notFound: "The item no longer exists."
         case .categoryInUse(let n): "This category is used by \(n) transaction(s). Choose where to move them first."
         case .invalidReassignmentTarget: "Choose a different category of the same type."
