@@ -4,19 +4,19 @@ _Last updated: 2026-11-15_
 
 Development happens on Windows. iOS builds and tests run on GitHub Actions (`.github/workflows/ios-build.yml`, `macos-15` runner, XcodeGen).
 
-## Summary (CI run #8, commit `045d4e8`)
+## Summary (CI run #9, commit `6e683b9`)
 
 | Check | Result |
 |---|---|
 | iOS Simulator compile | **Pass** (GitHub Actions) |
-| Automated tests | **Pass: 98 of 98** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
+| Automated tests | **Pass: 114 of 114** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
 | Unsigned device archive | **Pass.** `MyMoneyAI-unsigned-ipa` artifact (570 KB) |
 | Run on a real iPhone | **Not done.** Needs re-signing with your Apple Account (see below) |
 | Manual UI check (layout, VoiceOver, Dynamic Type, dark mode) | **Not done** |
 | Airplane-mode check on a device | **Not done.** The code makes no network calls, and Vision OCR ran offline in the simulator test |
-| Static source checks (`python tools/check_sources.py`) | **Pass:** 53 Swift files |
+| Static source checks (`python tools/check_sources.py`) | **Pass:** 60 Swift files |
 
-Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43688716668
+Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43695508989
 
 ### CI history
 
@@ -29,6 +29,7 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43688716668
 | #6 | `7e9f320` | Fail | Nested `#require` macro (the error wasn't annotated yet) |
 | #7 | `67473bf` | Fail | Same error, now annotated |
 | #8 | `045d4e8` | **Pass** | 98 of 98 tests (Phases 1–4) |
+| #9 | `6e683b9` | **Pass** | 114 of 114 tests (Phases 1–5) |
 
 ## About the unsigned IPA
 
@@ -63,7 +64,17 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43688716668
 - Category suggestions from your past choices for the merchant, then a built-in merchant directory, then header keywords
 - Receipts appear on the transaction detail screen and are never counted as separate spending
 
-## Tests (98, all passing in CI run #8)
+**Phase 5:** bills and budgets
+- Bill editor: name, optional expected amount (empty means it varies), currency, weekly, monthly, yearly or every N days, category and payment method used when paid, notes
+- Due status by calendar day: overdue, due today, due within 7 days, upcoming, paused
+- Record Payment either creates one expense linked to the bill or links an expense you already recorded (for example from a receipt), so it isn't counted twice. The bill then moves one period on from its due date. An expense can only be linked to one bill
+- Skip a payment, pause or resume, delete (recorded payments stay as ordinary expenses)
+- Monthly and yearly bills due on the last day of a month stay on the last day (Jan 31 → Feb 29 → Mar 31)
+- Monthly budgets, overall or per expense category, in any supported currency; at most one active budget per category and currency
+- Budget progress uses the same rules as every other total: expenses minus refunds, in the budget's currency only; transfers, card repayments and unpaid bills never count. 80% used is shown as near the limit
+- Budgets screen with month navigation; dashboard shows budget progress and upcoming bills with their status
+
+## Tests (114, all passing in CI run #9)
 
 | File | Count | Covers |
 |---|---|---|
@@ -74,9 +85,10 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/43688716668
 | `PersistenceTests.swift` | 3 | First-launch setup, save and reload, default settings |
 | `ReceiptParserTests.swift` | 18 (+ parameterized cases) | Synthetic receipts: standard, cash and change, split columns, discounts, grand total and tip, fallbacks, number formats, dates, merchants, currency |
 | `ReceiptServicesTests.swift` | 12 | OCR line assembly; **real Vision OCR on a rendered synthetic receipt**; fingerprints; duplicate detection; category suggestions |
+| `BillBudgetTests.swift` | 16 | Due status, next due dates (month ends, leap years, custom intervals), bill validation, payment candidates, budget progress and thresholds; SwiftData: recording or linking a payment creates exactly one expense, failed links don't advance the bill, deleting a bill keeps payments, budget rules |
 | `ReceiptStorageTests.swift` | 8 | File save, load and delete; path-traversal rejection; orphan cleanup; linking receipts to new or existing transactions; failed saves write nothing; receipts aren't counted as spending |
 
-Xcode counts parameterized cases separately, which is why the total is 98. All tests use synthetic data only.
+Xcode counts parameterized cases separately, which is why the total is 114. All tests use synthetic data only.
 
 ## Known issues and risks
 
@@ -85,7 +97,8 @@ Xcode counts parameterized cases separately, which is why the total is 98. All t
 - Receipt parsing is rule-based. Unusual layouts will need manual correction, which the review screen supports.
 - Deleting a transaction keeps its receipt record and image. A cleanup option is planned for Phase 6.
 - Swift 5 language mode with complete strict-concurrency checking. Warnings should be cleared before moving to Swift 6 mode.
-- Bills and Budgets screens are still read-only until Phase 5.
+- Bills have no reminder notifications yet; due status shows in the app only.
+- A monthly bill on the 30th that passes through February moves to the 29th (or 28th) and stays there; only bills on the last day of a month are kept at month end.
 - Bundle ID `com.example.mymoneyai` must be changed to something unique to you when re-signing.
 
 ## Building
@@ -96,5 +109,4 @@ Xcode counts parameterized cases separately, which is why the total is 98. All t
 ## Next tasks
 
 1. Re-sign the IPA with a free Apple Account and do a manual test pass on an iPhone, including airplane mode and the camera.
-2. Phase 5: recurring bills and budgets.
-3. Phase 6: app lock, encrypted export/import, delete all data, accessibility audit.
+2. Phase 6: app lock, encrypted export/import, delete all data, accessibility audit.
