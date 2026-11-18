@@ -93,6 +93,9 @@ struct TransactionDetailView: View {
                 LabeledContent("Merchant", value: m)
             }
             LabeledContent("Date", value: t.transactionDate.formatted(date: .long, time: .omitted))
+            if t.record.isCountedInOtherMonth(calendar: .current) {
+                LabeledContent("Counts in", value: t.record.reportingDate(in: .current).formatted(.dateTime.month(.wide).year()))
+            }
             if t.transactionType.categoryKind != nil {
                 LabeledContent("Category", value: category?.name ?? "Uncategorized")
             }

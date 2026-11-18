@@ -5,6 +5,7 @@ struct PaymentMethodsView: View {
     @Environment(AppContainer.self) private var app
     @Query(sort: \PaymentMethod.createdAt) private var methods: [PaymentMethod]
     @State private var editing: PaymentMethodEditorRoute?
+    @State private var showSetup = false
     @State private var deleting: PaymentMethod?
     @State private var inUse: (method: PaymentMethod, count: Int)?
     @State private var errorMessage: String?
@@ -13,10 +14,15 @@ struct PaymentMethodsView: View {
         Group {
             if methods.isEmpty {
                 EmptyStateView(title: "No Payment Methods", systemImage: "creditcard",
-                               message: "Add cash, cards or bank accounts to record how you paid. Only a name and optional last four digits are stored.",
-                               actionTitle: "Add Payment Method") { editing = .new }
+                               message: "Add cash, debit cards and credit cards to record how you paid. Only a name and optional last four digits are stored.",
+                               actionTitle: "Set Up Accounts") { showSetup = true }
             } else {
                 List {
+                    Section {
+                        Button { showSetup = true } label: { Label("Quick Setup: Add Several", systemImage: "rectangle.stack.badge.plus") }
+                    } footer: {
+                        Text("Pay off a credit card from your bank as a Transfer (From: bank, To: card), so it isn't counted as spending twice.")
+                    }
                     section("Active", methods.filter(\.isActive))
                     section("Inactive", methods.filter { !$0.isActive })
                 }
@@ -24,10 +30,14 @@ struct PaymentMethodsView: View {
         }
         .navigationTitle("Payment Methods")
         .toolbar {
-            Button { editing = .new } label: { Image(systemName: "plus") }
+            Menu {
+                Button { editing = .new } label: { Label("Add One", systemImage: "plus") }
+                Button { showSetup = true } label: { Label("Quick Setup", systemImage: "rectangle.stack.badge.plus") }
+            } label: { Image(systemName: "plus") }
                 .accessibilityLabel("Add payment method")
         }
         .sheet(item: $editing) { PaymentMethodEditorView(route: $0) }
+        .sheet(isPresented: $showSetup) { AccountSetupView() }
         .confirmationDialog("Delete Payment Method?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
                             titleVisibility: .visible, presenting: deleting) { m in
             Button("Delete \(m.name)", role: .destructive) {
@@ -97,6 +107,7 @@ struct PaymentMethodEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \PaymentMethod.createdAt) private var methods: [PaymentMethod]
     let route: PaymentMethodEditorRoute
+    var onSaved: ((UUID) -> Void)? = nil
     @State private var name = ""
     @State private var type: PaymentMethodType = .debitCard
     @State private var nickname = ""
@@ -105,8 +116,9 @@ struct PaymentMethodEditorView: View {
     @State private var isActive = true
     @State private var errorMessage: String?
 
-    init(route: PaymentMethodEditorRoute) {
+    init(route: PaymentMethodEditorRoute, onSaved: ((UUID) -> Void)? = nil) {
         self.route = route
+        self.onSaved = onSaved
         if case .edit(let m) = route {
             _name = State(initialValue: m.name); _type = State(initialValue: m.type)
             _nickname = State(initialValue: m.accountNickname ?? ""); _lastFour = State(initialValue: m.lastFourDigits ?? "")
@@ -122,9 +134,19 @@ struct PaymentMethodEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name (e.g. Chase Sapphire)", text: $name)
                     Picker("Type", selection: $type) {
                         ForEach(PaymentMethodType.allCases) { Label($0.displayName, systemImage: $0.symbol).tag($0) }
+                    }
+                    TextField("Name (e.g. Wells Fargo Debit)", text: $name)
+                    if editingId == nil, !AccountPresets.suggestions(for: type).isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack {
+                                ForEach(AccountPresets.suggestions(for: type), id: \.self) { s in
+                                    Button(s) { name = AccountPresets.defaultName(s, type: type) }
+                                        .buttonStyle(.bordered).controlSize(.small)
+                                }
+                            }
+                        }
                     }
                     TextField("Nickname (optional)", text: $nickname)
                 }
@@ -180,10 +202,12 @@ struct PaymentMethodEditorView: View {
         do {
             switch route {
             case .new:
-                try app.referenceData.createPaymentMethod(name: name, type: type, nickname: nickname, lastFour: four, underlyingId: underlyingId)
+                let m = try app.referenceData.createPaymentMethod(name: name, type: type, nickname: nickname, lastFour: four, underlyingId: underlyingId)
+                onSaved?(m.id)
             case .edit(let m):
                 try app.referenceData.updatePaymentMethod(m, name: name, type: type, nickname: nickname, lastFour: four,
                                                           underlyingId: underlyingId, isActive: isActive)
+                onSaved?(m.id)
             }
             dismiss()
         } catch { errorMessage = error.localizedDescription }

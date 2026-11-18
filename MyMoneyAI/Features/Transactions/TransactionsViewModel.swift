@@ -30,6 +30,8 @@ struct TransactionDraft: Equatable, Sendable {
     var transferDestinationPaymentMethodId: UUID?
     var notes = ""
     var isRefund = false
+    /// Months after the date's month that this counts in: -1, 0 (its own month) or +1.
+    var countedMonthOffset = 0
 
     // Preserved from the original when editing; never exposed for editing.
     var createdAt: Date?
@@ -57,6 +59,8 @@ struct TransactionDraft: Equatable, Sendable {
         transferDestinationPaymentMethodId = r.transferDestinationPaymentMethodId
         notes = r.notes ?? ""
         isRefund = r.isRefund
+        countedMonthOffset = min(max(CountedMonth.offset(of: r, calendar: .current), CountedMonth.allowedOffsets.lowerBound),
+                                 CountedMonth.allowedOffsets.upperBound)
         createdAt = r.createdAt
         source = r.source
         receiptId = r.receiptId
@@ -112,7 +116,7 @@ struct TransactionDraft: Equatable, Sendable {
 
     /// Builds the record to persist. Throws the first validation error.
     /// Fields that don't apply to the type are cleared so stored data is never contradictory.
-    func makeRecord(categoryKinds: [UUID: CategoryKind], now: Date = .now) throws -> TransactionRecord {
+    func makeRecord(categoryKinds: [UUID: CategoryKind], now: Date = .now, calendar: Calendar = .current) throws -> TransactionRecord {
         if let first = validationErrors(categoryKinds: categoryKinds).first { throw first }
         guard let amount = amountMinorUnits else { throw ValidationError.invalidAmount }
         let m = merchant.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -137,7 +141,9 @@ struct TransactionDraft: Equatable, Sendable {
             isVerified: true,
             transferGroupId: transferGroupId,
             isRefund: countsAsCashFlow ? isRefund : false,
-            transferDestinationPaymentMethodId: type == .transfer ? transferDestinationPaymentMethodId : nil
+            transferDestinationPaymentMethodId: type == .transfer ? transferDestinationPaymentMethodId : nil,
+            countedMonth: countsAsCashFlow && CountedMonth.allowedOffsets.contains(countedMonthOffset)
+                ? CountedMonth.key(offset: countedMonthOffset, from: date, calendar: calendar) : nil
         )
     }
 }

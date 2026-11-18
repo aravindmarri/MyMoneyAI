@@ -21,6 +21,14 @@ struct TransactionRow: View {
         }
     }
 
+    /// Category, plus the month it counts in when that differs from its date (e.g. "Salary · Counts in Nov").
+    private var subtitle: String {
+        let base = category?.name ?? transaction.transactionType.displayName
+        let r = transaction.record
+        guard r.isCountedInOtherMonth(calendar: .current) else { return base }
+        return base + " · Counts in " + r.reportingDate(in: .current).formatted(.dateTime.month(.abbreviated))
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: category?.symbol ?? transaction.transactionType.symbol)
@@ -31,7 +39,7 @@ struct TransactionRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.merchant ?? transaction.title).font(.body).lineLimit(1)
-                Text(category?.name ?? transaction.transactionType.displayName)
+                Text(subtitle)
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()

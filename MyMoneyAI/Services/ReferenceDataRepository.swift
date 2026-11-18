@@ -142,6 +142,23 @@ final class ReferenceDataRepository {
         try context.save()
     }
 
+    /// Creates several payment methods with one save. Returns how many were added.
+    @discardableResult
+    func createPaymentMethods(_ items: [AccountSetupItem], existingNames: [String]) throws -> Int {
+        let toCreate = try AccountSetup.itemsToCreate(items, existingNames: existingNames)
+        for item in toCreate {
+            context.insert(PaymentMethod(name: item.name, type: item.type,
+                                         lastFourDigits: item.lastFour.isEmpty ? nil : item.lastFour))
+        }
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+        return toCreate.count
+    }
+
     private static func clean(_ s: String?) -> String? {
         let t = s?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return t.isEmpty ? nil : t

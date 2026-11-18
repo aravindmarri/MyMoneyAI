@@ -142,6 +142,8 @@ struct CSVColumnMapping: Equatable, Sendable {
     /// MyMoney AI's own "Type" column (Income/Expense/Transfer/Adjustment). Overrides the sign.
     var type: Int?
     var refund: Int?
+    /// MyMoney AI's own "Counts In Month" column ("2026-11").
+    var countedMonth: Int?
     var dateOrder: CSVDateOrder = .yearMonthDay
 
     var isComplete: Bool {
@@ -220,6 +222,7 @@ struct CSVImportSource: Equatable, Sendable {
                 return !values.isEmpty && values.allSatisfy { CSVTransactionImporter.transactionType(from: $0) != nil } ? i : nil
             }
             m.refund = find(["refund"])
+            m.countedMonth = find(["counts in month"])
             if m.amount == nil, m.debit != nil || m.credit != nil { m.amountMode = .debitCredit }
         }
         if m.date == nil {
@@ -380,11 +383,23 @@ enum CSVTransactionImporter {
             }
         }
 
+        var countedMonth: Int?
+        let countedText = cell(mapping.countedMonth)
+        if type.categoryKind != nil, !countedText.isEmpty {
+            let parts = countedText.split { !$0.isNumber }.compactMap { Int($0) }
+            let k = parts.count == 2 ? CountedMonth.key(year: parts[0], month: parts[1]) : 0
+            guard parts.count == 2, CountedMonth.date(forKey: k, calendar: calendar) != nil else {
+                return .failure("Can't read the month \"\(countedText.prefix(30))\"")
+            }
+            countedMonth = k == CountedMonth.key(for: date, calendar: calendar) ? nil : k
+        }
+
         let record = TransactionRecord(
             transactionDate: date, createdAt: now, updatedAt: now, amountMinorUnits: abs(signed),
             currencyCode: options.currencyCode, merchant: merchantText.isEmpty ? nil : merchantText, title: title,
             notes: notes.isEmpty ? nil : notes, transactionType: type, categoryId: categoryId,
-            paymentMethodId: options.paymentMethodId, source: .csvImport, isVerified: true, isRefund: isRefund)
+            paymentMethodId: options.paymentMethodId, source: .csvImport, isVerified: true, isRefund: isRefund,
+            countedMonth: countedMonth)
         return .success(Made(record: record, suggested: suggested))
     }
 
@@ -430,7 +445,7 @@ enum CSVTransactionImporter {
 
 enum CSVTransactionExporter {
     static let header = ["Date", "Type", "Refund", "Title", "Merchant", "Category", "Payment Method",
-                         "Amount", "Signed Amount", "Currency", "Notes", "Source"]
+                         "Amount", "Signed Amount", "Currency", "Notes", "Source", "Counts In Month"]
 
     /// One row per transaction, oldest first. "Amount" is always positive and "Type" gives the
     /// direction; "Signed Amount" is negative for money out, for spreadsheet sums.
@@ -455,9 +470,16 @@ enum CSVTransactionExporter {
                 CSVWriter.textCell(r.categoryId.flatMap { categoryNames[$0] } ?? ""),
                 CSVWriter.textCell(r.paymentMethodId.flatMap { paymentMethodNames[$0] } ?? ""),
                 amount, signed, r.currencyCode, CSVWriter.textCell(r.notes ?? ""), r.source.displayName,
+                countedMonthText(r, calendar: calendar),
             ])
         }
         return CSVWriter.write(rows)
+    }
+
+    /// "2026-11" when the transaction counts in a month other than its date's, otherwise empty.
+    static func countedMonthText(_ r: TransactionRecord, calendar: Calendar) -> String {
+        guard r.isCountedInOtherMonth(calendar: calendar), let k = r.countedMonth else { return "" }
+        return String(format: "%04d-%02d", k / 100, k % 100)
     }
 
     /// "1234.50" for USD, "1234" for JPY, "1.234" for KWD.

@@ -86,7 +86,7 @@ extension FinanceCalculationService {
     /// Net expense per category including categories whose refunds exceed spending.
     func expensesByCategoryIncludingNegative(_ records: [TransactionRecord], in range: DateRange, currencyCode: String) -> [(UUID?, Int64)] {
         var totals: [UUID?: Int64] = [:]
-        for r in records where r.transactionType == .expense && r.currencyCode == currencyCode && range.contains(r.transactionDate) {
+        for r in records where r.transactionType == .expense && r.currencyCode == currencyCode && range.contains(r.reportingDate(in: calendar)) {
             totals[r.categoryId, default: 0] += r.isRefund ? -r.amountMinorUnits : r.amountMinorUnits
         }
         return totals.map { ($0.key, $0.value) }

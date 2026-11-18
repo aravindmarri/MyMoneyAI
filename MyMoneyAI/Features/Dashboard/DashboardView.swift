@@ -8,6 +8,8 @@ struct DashboardView: View {
     @Query(filter: #Predicate<RecurringBill> { $0.isActive }, sort: \RecurringBill.nextDueDate) private var bills: [RecurringBill]
     @Query private var budgets: [Budget]
     @Query private var settings: [AppSettings]
+    @Query private var paymentMethods: [PaymentMethod]
+    @State private var showAccountSetup = false
     @State private var model = DashboardViewModel()
     @State private var editorRoute: TransactionEditorRoute?
 
@@ -16,7 +18,7 @@ struct DashboardView: View {
     var body: some View {
         let records = transactions.map(\.record)
         let summary = model.summary(records: records, currencyCode: currency, finance: app.finance)
-        let monthTransactions = transactions.filter { model.range.contains($0.transactionDate) }
+        let monthTransactions = transactions.filter { model.range.contains($0.record.reportingDate(in: app.finance.calendar)) }
         let categoryByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
 
         NavigationStack {
@@ -31,6 +33,7 @@ struct DashboardView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     quickActions
+                    if paymentMethods.isEmpty { accountSetupPrompt }
                     spendingSection(records: records, categories: categories)
                     cashFlowSection(records: records)
                     budgetsSection(records: records, categoryByID: categoryByID)
@@ -43,6 +46,7 @@ struct DashboardView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Home")
             .sheet(item: $editorRoute) { TransactionEditorView(route: $0) }
+            .sheet(isPresented: $showAccountSetup) { AccountSetupView() }
         }
     }
 
@@ -74,6 +78,17 @@ struct DashboardView: View {
                         systemImage: "equal.circle.fill", tint: Theme.net)
             SummaryCard(title: "Spent of Income", value: ratio, systemImage: "percent", tint: .orange)
         }
+    }
+
+    private var accountSetupPrompt: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Add your cards and cash", systemImage: "creditcard.and.123").font(.headline)
+            Text("See spending by Wells Fargo debit, Capital One, Amex, cash, or whatever you use.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Button("Set Up Accounts") { showAccountSetup = true }.buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
     }
 
     private var quickActions: some View {

@@ -263,10 +263,10 @@ final class CSVImportPlanTests: XCTestCase {
         let rows = try CSVParser.parse(csv).rows
         XCTAssertEqual(rows[0], CSVTransactionExporter.header)
         XCTAssertEqual(rows.map { $0[0] }.dropFirst(), ["2024-01-01", "2024-01-02", "2024-01-03", "2024-02-01"], "oldest first")
-        XCTAssertEqual(rows[1], ["2024-01-01", "Expense", "Yes", "Returned", "", "", "", "5.00", "5.00", "USD", "", "Manual"])
+        XCTAssertEqual(rows[1], ["2024-01-01", "Expense", "Yes", "Returned", "", "", "", "5.00", "5.00", "USD", "", "Manual", ""])
         XCTAssertEqual(rows[2][7...9], ["300000", "300000", "JPY"])
         XCTAssertEqual(rows[3][8], "100.00", "transfers are not signed")
-        XCTAssertEqual(rows[4], ["2024-02-01", "Expense", "", "'=HYPERLINK(1)", "Shell", "Groceries", "Visa", "42.10", "-42.10", "USD", "line1\nline2", "Manual"])
+        XCTAssertEqual(rows[4], ["2024-02-01", "Expense", "", "'=HYPERLINK(1)", "Shell", "Groceries", "Visa", "42.10", "-42.10", "USD", "line1\nline2", "Manual", ""])
         XCTAssertTrue(csv.hasSuffix("\r\n"))
     }
 

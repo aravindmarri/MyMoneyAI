@@ -66,14 +66,15 @@ struct FinanceCalculationService: Sendable {
     var calendar: Calendar = .current
 
     /// Rules:
-    /// - Range is start-inclusive, end-exclusive, on `transactionDate` (not `createdAt`).
+    /// - Range is start-inclusive, end-exclusive, on the reporting date: `transactionDate`, or the
+    ///   first of `countedMonth` when a transaction counts in another month (never `createdAt`).
     /// - Only records in `currencyCode` are summed; other currencies are counted as excluded.
     /// - Transfers (incl. credit-card repayments) and adjustments are never income or expense,
     ///   so a card purchase (expense) plus its repayment (transfer) counts once.
     /// - `isRefund` subtracts within its bucket.
     func summary(of records: [TransactionRecord], in range: DateRange, currencyCode: String) -> PeriodSummary {
         var s = PeriodSummary(currencyCode: currencyCode)
-        for r in records where range.contains(r.transactionDate) {
+        for r in records where range.contains(r.reportingDate(in: calendar)) {
             guard r.currencyCode == currencyCode else { s.excludedOtherCurrencyCount += 1; continue }
             s.transactionCount += 1
             let signed = r.isRefund ? -r.amountMinorUnits : r.amountMinorUnits
@@ -90,7 +91,7 @@ struct FinanceCalculationService: Sendable {
 
     /// Signed expense contribution, or nil if the record isn't an in-range expense in this currency.
     private func expenseContribution(_ r: TransactionRecord, range: DateRange, currencyCode: String) -> Int64? {
-        guard r.transactionType == .expense, r.currencyCode == currencyCode, range.contains(r.transactionDate) else { return nil }
+        guard r.transactionType == .expense, r.currencyCode == currencyCode, range.contains(r.reportingDate(in: calendar)) else { return nil }
         return r.isRefund ? -r.amountMinorUnits : r.amountMinorUnits
     }
 
@@ -140,7 +141,7 @@ struct FinanceCalculationService: Sendable {
         var byDay: [Date: Int64] = [:]
         for r in records {
             guard let v = expenseContribution(r, range: range, currencyCode: currencyCode) else { continue }
-            byDay[calendar.startOfDay(for: r.transactionDate), default: 0] += v
+            byDay[calendar.startOfDay(for: r.reportingDate(in: calendar)), default: 0] += v
         }
         var result: [DailyTotal] = []
         var day = calendar.startOfDay(for: range.start)

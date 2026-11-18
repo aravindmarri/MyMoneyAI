@@ -38,6 +38,7 @@ struct TransactionEditorView: View {
 
     @State private var draft: TransactionDraft
     @State private var errorMessage: String?
+    @State private var addingMethodFor: MethodSlot?
     @FocusState private var amountFocused: Bool
     private let navigationTitle: String
 
@@ -78,7 +79,18 @@ struct TransactionEditorView: View {
                 } message: {
                     Text(errorMessage ?? "")
                 }
-                .onAppear { if draft.editingId == nil && draft.amountText.isEmpty { amountFocused = true } }
+                .onAppear {
+                    if draft.editingId == nil && draft.amountText.isEmpty { amountFocused = true }
+                    applyLastUsedMethod()
+                }
+                .sheet(item: $addingMethodFor) { slot in
+                    PaymentMethodEditorView(route: .new) { id in
+                        switch slot {
+                        case .source: draft.paymentMethodId = id
+                        case .destination: draft.transferDestinationPaymentMethodId = id
+                        }
+                    }
+                }
         }
     }
 
@@ -153,10 +165,49 @@ struct TransactionEditorView: View {
     }
 
     private var detailsSection: some View {
-        Section("Details") {
+        Section {
             TextField("Title", text: $draft.title)
             TextField("Merchant (optional)", text: $draft.merchant)
             DatePicker("Date", selection: $draft.date, displayedComponents: .date)
+            if draft.type == .income || draft.type == .expense {
+                Picker("Counts in", selection: $draft.countedMonthOffset) {
+                    ForEach(Array(CountedMonth.allowedOffsets).reversed(), id: \.self) { offset in
+                        Text(countedMonthLabel(offset)).tag(offset)
+                    }
+                }
+                if draft.countedMonthOffset == 0, draft.type == .income, isNearMonthEnd {
+                    Button("Pay for next month? Count it in \(monthName(offset: 1))") {
+                        withAnimation { draft.countedMonthOffset = 1 }
+                    }
+                    .font(.footnote)
+                }
+            }
+        } header: {
+            Text("Details")
+        } footer: {
+            if draft.countedMonthOffset != 0, draft.type == .income || draft.type == .expense {
+                Text("Counted in \(monthName(offset: draft.countedMonthOffset))'s totals, budgets and reports. It stays dated \(draft.date.formatted(date: .abbreviated, time: .omitted)) in your transaction list.")
+            }
+        }
+    }
+
+    /// The last 7 days of the date's month, when an early salary or rent payment is likely.
+    private var isNearMonthEnd: Bool {
+        let cal = Calendar.current
+        let end = cal.monthRange(containing: draft.date).end
+        return (cal.dateComponents([.day], from: cal.startOfDay(for: draft.date), to: end).day ?? 99) <= 7
+    }
+
+    private func monthName(offset: Int) -> String {
+        let d = Calendar.current.date(byAdding: .month, value: offset, to: draft.date) ?? draft.date
+        return d.formatted(.dateTime.month(.wide))
+    }
+
+    private func countedMonthLabel(_ offset: Int) -> String {
+        switch offset {
+        case 0: "\(monthName(offset: 0)) (date's month)"
+        case 1: "\(monthName(offset: 1)) (next month)"
+        default: "\(monthName(offset: offset)) (previous month)"
         }
     }
 
@@ -177,11 +228,12 @@ struct TransactionEditorView: View {
             if draft.type == .transfer {
                 methodPicker("To", selection: $draft.transferDestinationPaymentMethodId)
             }
-            if selectableMethods.isEmpty {
-                Text("Add payment methods in Settings to track how you paid.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            Button {
+                addingMethodFor = draft.type == .transfer && draft.paymentMethodId != nil ? .destination : .source
+            } label: {
+                Label(selectableMethods.isEmpty ? "Add a Card or Cash" : "Add Payment Method", systemImage: "plus.circle")
             }
+            .font(.subheadline)
             if draft.type == .transfer {
                 Text(transferNote)
                     .font(.footnote)
@@ -229,6 +281,17 @@ struct TransactionEditorView: View {
 
     // MARK: Actions
 
+    /// For a brand-new transaction, preselect the payment method used most recently for this type.
+    private func applyLastUsedMethod() {
+        guard draft.editingId == nil, draft.paymentMethodId == nil, draft.receiptId == nil, draft.amountText.isEmpty,
+              let records = try? app.transactions.allRecords() else { return }
+        let activeIds = Set(methods.filter(\.isActive).map(\.id))
+        draft.paymentMethodId = records
+            .filter { $0.transactionType == draft.type && $0.paymentMethodId.map(activeIds.contains) == true }
+            .max { ($0.transactionDate, $0.createdAt) < ($1.transactionDate, $1.createdAt) }?
+            .paymentMethodId
+    }
+
     private func typeChanged(to newType: TransactionType) {
         if let c = draft.categoryId, categoryKinds[c] != newType.categoryKind { draft.categoryId = nil }
         if newType != .income && newType != .expense { draft.isRefund = false }
@@ -265,4 +328,10 @@ struct TransactionEditorView: View {
             errorMessage = error.localizedDescription
         }
     }
+}
+
+/// Which account picker a newly added payment method should fill.
+private enum MethodSlot: String, Identifiable {
+    case source, destination
+    var id: String { rawValue }
 }

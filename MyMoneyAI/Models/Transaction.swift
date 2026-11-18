@@ -78,14 +78,18 @@ struct TransactionRecord: Codable, Hashable, Sendable, Identifiable {
     /// For transfers: the account receiving the money (e.g. the credit card being repaid).
     /// `paymentMethodId` is the source account.
     var transferDestinationPaymentMethodId: UUID?
+    /// The month this transaction counts in, as yyyymm (e.g. 202611), when it differs from the month
+    /// of `transactionDate`. Example: a November salary paid on October 29. nil = its own month.
+    var countedMonth: Int?
 
     init(id: UUID = UUID(), transactionDate: Date, createdAt: Date = .now, updatedAt: Date = .now,
          amountMinorUnits: Int64, currencyCode: String = CurrencyMath.defaultCode, merchant: String? = nil,
          title: String, notes: String? = nil, transactionType: TransactionType, categoryId: UUID? = nil,
          paymentMethodId: UUID? = nil, receiptId: UUID? = nil, recurringBillId: UUID? = nil,
          source: TransactionSource = .manual, isVerified: Bool = true, transferGroupId: UUID? = nil,
-         isRefund: Bool = false, transferDestinationPaymentMethodId: UUID? = nil) {
+         isRefund: Bool = false, transferDestinationPaymentMethodId: UUID? = nil, countedMonth: Int? = nil) {
         self.transferDestinationPaymentMethodId = transferDestinationPaymentMethodId
+        self.countedMonth = countedMonth
         self.id = id; self.transactionDate = transactionDate; self.createdAt = createdAt; self.updatedAt = updatedAt
         self.amountMinorUnits = amountMinorUnits; self.currencyCode = currencyCode; self.merchant = merchant
         self.title = title; self.notes = notes; self.transactionType = transactionType; self.categoryId = categoryId
@@ -116,9 +120,12 @@ final class MoneyTransaction {
     var transferGroupId: UUID?
     var isRefund: Bool = false
     var transferDestinationPaymentMethodId: UUID? = nil
+    /// Added in schema 2.0.0. See `TransactionRecord.countedMonth`.
+    var countedMonth: Int? = nil
 
     init(record r: TransactionRecord) {
         transferDestinationPaymentMethodId = r.transferDestinationPaymentMethodId
+        countedMonth = r.countedMonth
         id = r.id; transactionDate = r.transactionDate; createdAt = r.createdAt; updatedAt = r.updatedAt
         amountMinorUnits = r.amountMinorUnits; currencyCode = r.currencyCode; merchant = r.merchant
         title = r.title; notes = r.notes; transactionTypeRaw = r.transactionType.rawValue
@@ -139,7 +146,7 @@ final class MoneyTransaction {
                           title: title, notes: notes, transactionType: transactionType, categoryId: categoryId,
                           paymentMethodId: paymentMethodId, receiptId: receiptId, recurringBillId: recurringBillId,
                           source: source, isVerified: isVerified, transferGroupId: transferGroupId, isRefund: isRefund,
-                          transferDestinationPaymentMethodId: transferDestinationPaymentMethodId)
+                          transferDestinationPaymentMethodId: transferDestinationPaymentMethodId, countedMonth: countedMonth)
     }
 
     /// Applies editable fields. `id`, `createdAt` and `source` are never changed by an edit.
@@ -149,6 +156,7 @@ final class MoneyTransaction {
         categoryId = r.categoryId; paymentMethodId = r.paymentMethodId; receiptId = r.receiptId
         recurringBillId = r.recurringBillId; isVerified = r.isVerified; transferGroupId = r.transferGroupId
         isRefund = r.isRefund; transferDestinationPaymentMethodId = r.transferDestinationPaymentMethodId
+        countedMonth = r.countedMonth
         updatedAt = r.updatedAt
     }
 }
@@ -158,3 +166,49 @@ final class MoneyTransaction {
  `TransactionSplit` rows (parentId, amountMinorUnits, categoryId) must sum to the parent.
  Category totals will read children; cash-flow totals still count the parent exactly once.
 */
+
+/// Counting a transaction in a different month (e.g. salary for November that arrives in late October).
+enum CountedMonth {
+    /// How far from the transaction's own month it may be moved.
+    static let allowedOffsets = -1...1
+
+    static func key(year: Int, month: Int) -> Int { year * 100 + month }
+
+    static func key(for date: Date, calendar: Calendar) -> Int {
+        let c = calendar.dateComponents([.year, .month], from: date)
+        return key(year: c.year ?? 0, month: c.month ?? 1)
+    }
+
+    /// The first day of the month at noon, so time-zone changes never move it to another month.
+    static func date(forKey key: Int, calendar: Calendar) -> Date? {
+        let year = key / 100, month = key % 100
+        guard (1...12).contains(month), (1900...2200).contains(year) else { return nil }
+        return calendar.date(from: DateComponents(year: year, month: month, day: 1, hour: 12))
+    }
+
+    /// The key for `offset` months after the month of `date`, or nil for offset 0 (its own month).
+    static func key(offset: Int, from date: Date, calendar: Calendar) -> Int? {
+        guard offset != 0, let moved = calendar.date(byAdding: .month, value: offset, to: date) else { return nil }
+        return key(for: moved, calendar: calendar)
+    }
+
+    /// Months between the transaction's own month and its counted month (0 when not moved).
+    static func offset(of record: TransactionRecord, calendar: Calendar) -> Int {
+        guard let k = record.countedMonth, let target = date(forKey: k, calendar: calendar) else { return 0 }
+        let own = calendar.monthRange(containing: record.transactionDate).start
+        return calendar.dateComponents([.month], from: own, to: calendar.monthRange(containing: target).start).month ?? 0
+    }
+}
+
+extension TransactionRecord {
+    /// The date used for monthly totals, budgets and reports: the transaction date, or the first of
+    /// the counted month when the transaction is counted in another month.
+    func reportingDate(in calendar: Calendar) -> Date {
+        guard let k = countedMonth, k != CountedMonth.key(for: transactionDate, calendar: calendar),
+              let d = CountedMonth.date(forKey: k, calendar: calendar) else { return transactionDate }
+        return d
+    }
+
+    /// True when the transaction counts in a month other than the one it's dated in.
+    func isCountedInOtherMonth(calendar: Calendar) -> Bool { reportingDate(in: calendar) != transactionDate }
+}

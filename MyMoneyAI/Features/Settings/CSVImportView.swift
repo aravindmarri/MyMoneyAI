@@ -151,6 +151,7 @@ struct CSVImportView: View {
             columnPicker("Notes", selection: $mapping.notes)
             columnPicker("Type", selection: $mapping.type)
             if mapping.type != nil { columnPicker("Refund", selection: $mapping.refund) }
+            if mapping.countedMonth != nil { columnPicker("Counts in month", selection: $mapping.countedMonth) }
         } header: {
             Text("Optional columns")
         } footer: {
