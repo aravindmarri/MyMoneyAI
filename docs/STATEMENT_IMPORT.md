@@ -20,7 +20,7 @@ marked **Done** as each phase passes CI.
 
 ## Phases
 
-### Phase A: import, recognition, extraction, preview (**this phase**)
+### Phase A: import, recognition, extraction, preview (**Done**: CI run #22)
 - Import Center on the Import tab: statements (PDF, CSV, TXT, several at once), receipts and screenshots.
 - `DocumentFormatDetector`: PDF, CSV, TXT, image; XLSX, OFX and QFX are recognised and reported as "not supported yet"
   through the same `DocumentReading` interface, so readers can be added later without changing the flow.
