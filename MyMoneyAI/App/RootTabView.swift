@@ -23,7 +23,7 @@ struct RootTabView: View {
                 .tabItem { Label("Transactions", systemImage: "list.bullet.rectangle") }
                 .tag(AppTab.transactions)
             ReceiptScannerView()
-                .tabItem { Label("Scan", systemImage: "doc.viewfinder") }
+                .tabItem { Label("Import", systemImage: "doc.viewfinder") }
                 .tag(AppTab.scan)
             ReportsView()
                 .tabItem { Label("Reports", systemImage: "chart.bar.xaxis") }

@@ -39,6 +39,8 @@ struct CSVImportView: View {
     @State private var options = CSVImportOptions(currencyCode: CurrencyMath.defaultCode)
     @State private var plan = CSVImportPlan(rows: [])
     @State private var includeDuplicates = false
+    @State private var includePending = false
+    @State private var usingSavedMapping = false
     @State private var dateOrders: [CSVDateOrder] = []
     @State private var confirmImport = false
     @State private var errorMessage: String?
@@ -54,7 +56,7 @@ struct CSVImportView: View {
         _source = State(initialValue: CSVImportSource(table: table, hasHeaderRow: header))
     }
 
-    private var importCount: Int { plan.recordsToImport(includeDuplicates: includeDuplicates).count }
+    private var importCount: Int { plan.recordsToImport(includeDuplicates: includeDuplicates, includePending: includePending).count }
 
     var body: some View {
         NavigationStack {
@@ -101,7 +103,9 @@ struct CSVImportView: View {
             LabeledContent("Rows", value: "\(source.rows.count)")
             Toggle("First row is column names", isOn: $hasHeaderRow)
         } footer: {
-            Text("The file is read only on this iPhone.")
+            Text(usingSavedMapping
+                 ? "Using the column setup you confirmed last time for a file like this. The file is read only on this iPhone."
+                 : "The file is read only on this iPhone.")
         }
     }
 
@@ -152,6 +156,8 @@ struct CSVImportView: View {
             columnPicker("Type", selection: $mapping.type)
             if mapping.type != nil { columnPicker("Refund", selection: $mapping.refund) }
             if mapping.countedMonth != nil { columnPicker("Counts in month", selection: $mapping.countedMonth) }
+            columnPicker("Balance (not imported)", selection: $mapping.balance)
+            columnPicker("Status (pending/posted)", selection: $mapping.status)
         } header: {
             Text("Optional columns")
         } footer: {
@@ -182,6 +188,10 @@ struct CSVImportView: View {
             LabeledContent("Can't be read", value: "\(plan.invalidCount)")
             if plan.duplicateCount > 0 {
                 Toggle("Also import possible duplicates", isOn: $includeDuplicates)
+            }
+            if plan.pendingCount > 0 {
+                LabeledContent("Pending", value: "\(plan.pendingCount)")
+                Toggle("Also import pending transactions", isOn: $includePending)
             }
         } header: {
             Text("Summary")
@@ -234,7 +244,12 @@ struct CSVImportView: View {
         guard !prepared else { return }
         prepared = true
         options.currencyCode = settings.first?.preferredCurrencyCode ?? CurrencyMath.defaultCode
-        mapping = source.suggestedMapping(calendar: .current, locale: .current)
+        if let saved = CSVMappingStore().mapping(for: source) {
+            mapping = saved
+            usingSavedMapping = true
+        } else {
+            mapping = source.suggestedMapping(calendar: .current, locale: .current)
+        }
         refresh()
     }
 
@@ -252,9 +267,10 @@ struct CSVImportView: View {
     }
 
     private func save() {
-        let records = plan.recordsToImport(includeDuplicates: includeDuplicates)
+        let records = plan.recordsToImport(includeDuplicates: includeDuplicates, includePending: includePending)
         do {
             let n = try app.transactions.insertImported(records)
+            CSVMappingStore().save(mapping, for: source)
             let skipped = plan.rows.count - n
             dismiss()
             onFinished(skipped > 0 ? "Added \(n) transactions. \(skipped) rows were skipped." : "Added \(n) transactions.")

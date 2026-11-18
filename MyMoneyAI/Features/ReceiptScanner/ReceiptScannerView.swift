@@ -10,6 +10,7 @@ struct ReceiptScannerView: View {
     @Query private var settings: [AppSettings]
 
     @State private var model = ReceiptScannerViewModel()
+    @State private var importCenter = ImportCenterModel()
     @State private var photoItem: PhotosPickerItem?
     @State private var showCamera = false
 
@@ -19,10 +20,11 @@ struct ReceiptScannerView: View {
     var body: some View {
         NavigationStack {
             List {
+                ImportCenterSection(model: importCenter, currency: currency) { data in Task { await process(data) } }
                 importSection
                 recentSection
             }
-            .navigationTitle("Scan")
+            .navigationTitle("Import")
             .navigationDestination(for: UUID.self) { TransactionDetailView(transactionID: $0) }
             .overlay { if model.isProcessing { processingOverlay } }
             .onChange(of: photoItem) { _, item in
@@ -51,7 +53,7 @@ struct ReceiptScannerView: View {
                     .font(.system(size: 44))
                     .foregroundStyle(.tint)
                     .accessibilityHidden(true)
-                Text("Scan a Receipt").font(.title2.weight(.semibold))
+                Text("Scan a Receipt").font(.title3.weight(.semibold))
                 Text("Text is read on this iPhone with Apple Vision. Nothing is uploaded, and you review every field before it's saved.")
                     .foregroundStyle(.secondary)
             }

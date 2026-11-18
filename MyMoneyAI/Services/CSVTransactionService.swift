@@ -4,7 +4,7 @@ import SwiftData
 // MARK: - Dates
 
 /// Field order for all-numeric dates. Dates with a month name ("5 Jan 2024", "Jan 5, 2024") parse in any order.
-enum CSVDateOrder: String, CaseIterable, Identifiable, Sendable {
+enum CSVDateOrder: String, CaseIterable, Identifiable, Sendable, Codable {
     case yearMonthDay, monthDayYear, dayMonthYear
     var id: String { rawValue }
     var displayName: String {
@@ -120,14 +120,14 @@ enum CSVAmountParser {
 
 // MARK: - Mapping
 
-enum CSVAmountMode: String, CaseIterable, Identifiable, Sendable {
+enum CSVAmountMode: String, CaseIterable, Identifiable, Sendable, Codable {
     case single, debitCredit
     var id: String { rawValue }
     var displayName: String { self == .single ? "One amount column" : "Separate debit and credit columns" }
 }
 
 /// Which column holds what. Column indexes refer to `CSVImportSource.columns`.
-struct CSVColumnMapping: Equatable, Sendable {
+struct CSVColumnMapping: Equatable, Sendable, Codable {
     var date: Int?
     var description: Int?
     var amountMode: CSVAmountMode = .single
@@ -144,6 +144,10 @@ struct CSVColumnMapping: Equatable, Sendable {
     var refund: Int?
     /// MyMoney AI's own "Counts In Month" column ("2026-11").
     var countedMonth: Int?
+    /// Running balance column. Read for reference only; it never changes an amount.
+    var balance: Int?
+    /// Status column; rows whose status says "pending" are marked pending.
+    var status: Int?
     var dateOrder: CSVDateOrder = .yearMonthDay
 
     var isComplete: Bool {
@@ -223,6 +227,8 @@ struct CSVImportSource: Equatable, Sendable {
             }
             m.refund = find(["refund"])
             m.countedMonth = find(["counts in month"])
+            m.balance = find(["balance", "running balance", "available balance", "ledger balance"], excluding: [m.amount, m.debit, m.credit])
+            m.status = find(["status", "transaction status", "pending"], excluding: [m.description])
             if m.amount == nil, m.debit != nil || m.credit != nil { m.amountMode = .debitCredit }
         }
         if m.date == nil {
@@ -263,6 +269,9 @@ struct CSVImportRow: Identifiable, Equatable, Sendable {
     var status: Status
     var record: TransactionRecord?
     var categorySuggested: Bool
+    /// The bank hasn't posted it yet. Pending rows are skipped by default, because the posted
+    /// version usually appears in the next export and would otherwise be counted twice.
+    var isPending = false
 }
 
 struct CSVImportPlan: Equatable, Sendable {
@@ -272,8 +281,11 @@ struct CSVImportPlan: Equatable, Sendable {
     var duplicateCount: Int { rows.filter { if case .duplicate = $0.status { true } else { false } }.count }
     var invalidCount: Int { rows.filter { if case .invalid = $0.status { true } else { false } }.count }
 
-    func recordsToImport(includeDuplicates: Bool) -> [TransactionRecord] {
+    var pendingCount: Int { rows.filter { $0.isPending && $0.record != nil }.count }
+
+    func recordsToImport(includeDuplicates: Bool, includePending: Bool = false) -> [TransactionRecord] {
         rows.compactMap { row in
+            if row.isPending && !includePending { return nil }
             switch row.status {
             case .new: row.record
             case .duplicate: includeDuplicates ? row.record : nil
@@ -315,8 +327,9 @@ enum CSVTransactionImporter {
             case .failure(let reason):
                 rows.append(CSVImportRow(line: line, status: .invalid(reason), record: nil, categorySuggested: false))
             case .success(let made):
-                let status: CSVImportRow.Status = pool.take(matching: made.record).map { .duplicate(existingId: $0) } ?? .new
-                rows.append(CSVImportRow(line: line, status: status, record: made.record, categorySuggested: made.suggested))
+                let pending = cell(mapping.status).lowercased().contains("pending")
+                let status: CSVImportRow.Status = pending ? .new : (pool.take(matching: made.record).map { .duplicate(existingId: $0) } ?? .new)
+                rows.append(CSVImportRow(line: line, status: status, record: made.record, categorySuggested: made.suggested, isPending: pending))
             }
         }
         return CSVImportPlan(rows: rows)
