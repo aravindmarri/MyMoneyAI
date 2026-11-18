@@ -284,12 +284,12 @@ struct CSVImportPlan: Equatable, Sendable {
     var pendingCount: Int { rows.filter { $0.isPending && $0.record != nil }.count }
 
     func recordsToImport(includeDuplicates: Bool, includePending: Bool = false) -> [TransactionRecord] {
-        rows.compactMap { row in
+        rows.compactMap { (row: CSVImportRow) -> TransactionRecord? in
             if row.isPending && !includePending { return nil }
             switch row.status {
-            case .new: row.record
-            case .duplicate: includeDuplicates ? row.record : nil
-            case .invalid: nil
+            case .new: return row.record
+            case .duplicate: return includeDuplicates ? row.record : nil
+            case .invalid: return nil
             }
         }
     }
