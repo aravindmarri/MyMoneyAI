@@ -301,30 +301,50 @@ final class StatementRepositoryTests: XCTestCase {
 /// The 2.0.0 → 3.0.0 upgrade that adds the statement tables, on a real on-disk store.
 @MainActor
 final class SchemaV3MigrationTests: XCTestCase {
-    func testVersion2StoreUpgradesWithoutLosingData() throws {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "MigrationV3-\(UUID().uuidString)", directoryHint: .isDirectory)
+    private var folder: URL!
+    private var url: URL { folder.appending(path: "MyMoney.store") }
+    private let txId = UUID()
+
+    override func setUp() async throws {
+        folder = FileManager.default.temporaryDirectory.appending(path: "MigrationV3-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let url = folder.appending(path: "MyMoney.store")
-        let txId = UUID()
-        do {
-            let schema = Schema(versionedSchema: MyMoneySchemaV2.self)
-            let container = try ModelContainer(for: schema, migrationPlan: nil,
-                                               configurations: [ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)])
-            let context = ModelContext(container)
-            context.insert(MoneyTransaction(record: TransactionRecord(id: txId, transactionDate: Date(timeIntervalSince1970: 1_790_000_000),
-                                                                      amountMinorUnits: 2_500, title: "Synthetic salary", transactionType: .income,
-                                                                      countedMonth: 202_611)))
-            context.insert(PaymentMethod(name: "Wells Fargo Debit", type: .debitCard))
-            try context.save()
-        }
+    }
+
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: folder) }
+
+    /// Writes a store exactly as app builds 1.0 (19)–(22) did: schema 2.0.0.
+    private func writeVersion2Store() throws {
+        let schema = Schema(versionedSchema: MyMoneySchemaV2.self)
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)])
+        let context = ModelContext(container)
+        context.insert(MoneyTransaction(record: TransactionRecord(id: txId, transactionDate: Date(timeIntervalSince1970: 1_790_000_000),
+                                                                  amountMinorUnits: 2_500, title: "Synthetic salary", transactionType: .income,
+                                                                  countedMonth: 202_611)))
+        context.insert(PaymentMethod(name: "Wells Fargo Debit", type: .debitCard))
+        try context.save()
+    }
+
+    func testA_Version2StoreCanBeWritten() throws {
+        try writeVersion2Store()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    func testB_Version2StoreUpgradesWithoutLosingData() throws {
+        try writeVersion2Store()
         let updated = try PersistenceService(storeURL: url)
         let kept = try XCTUnwrap(TransactionRepository(context: updated.context).fetch(id: txId))
         XCTAssertEqual(kept.amountMinorUnits, 2_500); XCTAssertEqual(kept.countedMonth, 202_611)
         XCTAssertEqual(try updated.context.fetchCount(FetchDescriptor<PaymentMethod>()), 1)
         XCTAssertEqual(try updated.context.fetchCount(FetchDescriptor<ImportedStatement>()), 0)
-        updated.context.insert(MerchantAlias(aliasKey: "wm supercenter", merchantKey: "walmart"))
-        try updated.context.save()
+    }
+
+    func testC_UpgradedStoreAcceptsNewData() throws {
+        try writeVersion2Store()
+        do {
+            let updated = try PersistenceService(storeURL: url)
+            updated.context.insert(MerchantAlias(aliasKey: "wm supercenter", merchantKey: "walmart"))
+            try updated.context.save()
+        }
         XCTAssertEqual(try PersistenceService(storeURL: url).context.fetchCount(FetchDescriptor<MerchantAlias>()), 1)
     }
 }
