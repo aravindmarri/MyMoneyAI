@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// A saved statement with the match suggested for every line and the reasons behind it.
-/// Confirming, rejecting and adding transactions comes with the review screen (Phase C).
+/// A saved statement: progress, the suggestion for every line, bulk confirmation, duplicates,
+/// transactions missing from the statement, and undo for the whole import.
 struct StatementDetailView: View {
     @Environment(AppContainer.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -17,13 +17,22 @@ struct StatementDetailView: View {
     @State private var filter: LineFilter = .all
     @State private var confirmDelete = false
     @State private var message: String?
+    @State private var reviewing: ReviewRoute?
+    @State private var showBulk = false
+    @State private var duplicates: [UUID: StatementTransaction] = [:]
+    @State private var identicalGroups: [[UUID]] = []
+    @State private var missing: [TransactionRecord] = []
+
+    struct ReviewRoute: Identifiable { let id: UUID }
 
     enum LineFilter: String, CaseIterable, Identifiable {
-        case all, strong, possible, weak, choose, noMatch
+        case all, open, strong, possible, weak, choose, noMatch, done
         var id: String { rawValue }
         var title: String {
             switch self {
             case .all: "All"
+            case .open: "To review"
+            case .done: "Done"
             case .strong: "Strong"
             case .possible: "Possible"
             case .weak: "Weak"
@@ -54,52 +63,148 @@ struct StatementDetailView: View {
 
     private func passes(_ line: StatementTransaction) -> Bool {
         let p = primary(line)
+        let resolved = line.status == .matched || line.status == .created || line.status == .skipped
         switch filter {
         case .all: return true
+        case .open: return !resolved
+        case .done: return resolved
         case .strong: return p?.strength == .strong && p?.isAmbiguous == false
         case .possible: return p?.strength == .possible
         case .weak: return p?.strength == .weak
         case .choose: return p?.isAmbiguous == true
-        case .noMatch: return p == nil
+        case .noMatch: return p == nil && !resolved
         }
     }
 
     var body: some View {
         if let statement {
             List {
+                progressSection(statement)
                 summarySection(statement)
                 matchingSection
+                if !duplicates.isEmpty || !identicalGroups.isEmpty { duplicatesSection }
                 Section {
                     Picker("Show", selection: $filter) {
                         ForEach(LineFilter.allCases) { Text($0.title).tag($0) }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                     let byId = transactionsById
                     ForEach(lines.filter(passes)) { line in
-                        StatementMatchRow(line: line, match: primary(line), alternatives: alternatives(line), transactionsById: byId)
+                        Button { reviewing = ReviewRoute(id: line.id) } label: {
+                            StatementMatchRow(line: line, match: primary(line), alternatives: alternatives(line), transactionsById: byId)
+                        }
+                        .foregroundStyle(.primary)
                     }
                 } header: {
                     Text("Lines (\(lines.count))")
                 } footer: {
-                    Text("Suggestions only. Nothing has been changed in your transactions. Confirming matches and adding missing transactions comes in the next update.")
+                    Text("Tap a line to confirm, reject, add or skip it. Nothing changes in your transactions until you do.")
                 }
+                if !missing.isEmpty { missingSection(statement) }
                 Section {
-                    Button("Delete This Import", role: .destructive) { confirmDelete = true }
+                    Button("Undo This Import", role: .destructive) { confirmDelete = true }
                 } footer: {
-                    Text("Removes the statement and its suggestions from the app. Your transactions are not affected.")
+                    Text("Removes the statement, releases every confirmed match, restores any amount you changed, and deletes transactions that were added from this statement. Nothing else is touched.")
                 }
             }
             .navigationTitle(statement.institutionName ?? statement.originalFilename)
             .navigationBarTitleDisplayMode(.inline)
-            .confirmationDialog("Delete this import?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete Import", role: .destructive) { deleteImport() }
-            } message: { Text("The statement's \(lines.count) lines and suggestions are removed. Transactions in the app stay as they are.") }
+            .confirmationDialog("Undo this import?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Undo Import", role: .destructive) { deleteImport() }
+            } message: {
+                let added = lines.filter { $0.status == .created }.count
+                Text(added > 0 ? "\(added) transaction(s) added from this statement will be deleted. Confirmed matches are released; your other transactions stay as they are."
+                               : "The statement and its suggestions are removed. Your transactions stay as they are.")
+            }
+            .sheet(item: $reviewing, onDismiss: loadChecks) { route in StatementLineReviewView(lineId: route.id) }
+            .sheet(isPresented: $showBulk, onDismiss: loadChecks) { BulkConfirmView(statementId: statementId) }
+            .task { loadChecks() }
             .alert("Statement", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
                 Button("OK", role: .cancel) {}
             } message: { Text(message ?? "") }
         } else {
             ContentUnavailableView("Statement Not Found", systemImage: "doc.questionmark")
         }
+    }
+
+    private func progressSection(_ s: ImportedStatement) -> some View {
+        let done = lines.filter { $0.status == .matched || $0.status == .created || $0.status == .skipped }.count
+        let bulk = (try? app.statements.bulkConfirmCandidates(statementId: statementId).count) ?? 0
+        return Section {
+            ProgressView(value: lines.isEmpty ? 0 : Double(done) / Double(lines.count)) {
+                Text("\(done) of \(lines.count) lines reviewed")
+            }
+            LabeledContent("Confirmed", value: "\(lines.filter { $0.status == .matched }.count)")
+            LabeledContent("Added as new", value: "\(lines.filter { $0.status == .created }.count)")
+            LabeledContent("Skipped", value: "\(lines.filter { $0.status == .skipped }.count)")
+            if bulk > 0 {
+                Button { showBulk = true } label: { Label("Confirm \(bulk) Strong Matches…", systemImage: "checkmark.seal") }
+            }
+            switch s.reconciliationStatus {
+            case .reconciled:
+                Label("Every line is reviewed", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+            case .incomplete:
+                Label("Every read line is reviewed, but \(s.unreadLineCount) line(s) couldn't be read from the file", systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            default:
+                EmptyView()
+            }
+        } header: {
+            Text("Review")
+        } footer: {
+            Text("Balance checks against the statement totals come in the next update, so a reviewed statement isn't yet a proven balance.")
+        }
+    }
+
+    private var duplicatesSection: some View {
+        Section {
+            ForEach(Array(duplicates.keys), id: \.self) { id in
+                if let line = lines.first(where: { $0.id == id }), line.status == .unmatched || line.status == .suggested {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(line.originalDescription).lineLimit(1)
+                        Text("Already on an earlier statement for this account (overlapping periods).").font(.caption).foregroundStyle(.orange)
+                        Button("Skip as Duplicate") {
+                            do { try app.statements.skip(lineId: id); loadChecks() } catch { message = error.localizedDescription }
+                        }
+                        .font(.caption)
+                    }
+                }
+            }
+            ForEach(identicalGroups, id: \.self) { group in
+                if let first = lines.first(where: { $0.id == group[0] }) {
+                    Text("\(group.count) identical lines: \(first.originalDescription), \(CurrencyMath.format(first.amountMinorUnits, currencyCode: first.currencyCode)). They are kept as separate purchases; skip one only if it is a real duplicate.")
+                        .font(.caption)
+                }
+            }
+        } header: {
+            Text("Possible duplicates")
+        }
+    }
+
+    private func missingSection(_ s: ImportedStatement) -> some View {
+        Section {
+            ForEach(missing, id: \.id) { t in
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(t.merchant ?? t.title)
+                        Text(t.transactionDate.formatted(date: .abbreviated, time: .omitted) + " · " + t.transactionType.displayName)
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text(CurrencyMath.format(t.amountMinorUnits, currencyCode: t.currencyCode)).monospacedDigit()
+                }
+            }
+        } header: {
+            Text("In the app but not on this statement (\(missing.count))")
+        } footer: {
+            Text("Recorded on this account during the statement period but not found on it. Check the date or payment method, or whether it was a duplicate. The last 3 days of the period are left out because those may post on the next statement.")
+        }
+    }
+
+    private func loadChecks() {
+        duplicates = (try? app.statements.overlappingDuplicates(statementId: statementId)) ?? [:]
+        identicalGroups = (try? app.statements.identicalLineGroups(statementId: statementId)) ?? []
+        missing = (try? app.statements.appTransactionsMissingFromStatement(statementId: statementId)) ?? []
     }
 
     private func summarySection(_ s: ImportedStatement) -> some View {
@@ -155,7 +260,7 @@ struct StatementDetailView: View {
 
     private func deleteImport() {
         do {
-            try app.statements.deleteImport(statementId: statementId)
+            try app.statements.rollbackImport(statementId: statementId)
             dismiss()
         } catch { message = error.localizedDescription }
     }
@@ -181,7 +286,13 @@ struct StatementMatchRow: View {
                 Text((line.direction == .moneyIn ? "+" : "−") + CurrencyMath.format(line.amountMinorUnits, currencyCode: line.currencyCode))
                     .monospacedDigit()
             }
-            if let match, let t = transactionsById[match.transactionId] {
+            if line.status == .matched || line.status == .created || line.status == .skipped {
+                let t = line.matchedTransactionId.flatMap { transactionsById[$0] }
+                let name = t.map { $0.merchant ?? $0.title } ?? ""
+                Label(line.status == .matched ? "Confirmed: \(name)" : (line.status == .created ? "Added: \(name)" : "Skipped"),
+                      systemImage: line.status == .skipped ? "forward.fill" : "checkmark.seal.fill")
+                    .font(.caption).foregroundStyle(line.status == .skipped ? Color.secondary : Color.green)
+            } else if let match, let t = transactionsById[match.transactionId] {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Label(match.isAmbiguous ? "Choose: several close matches" : match.strength.displayName, systemImage: symbol(match))

@@ -219,6 +219,8 @@ final class ReconciliationMatch {
     var isPrimary: Bool
     var statusRaw: String
     var confirmedAt: Date?
+    /// The transaction's amount before the user chose "use the statement amount", so undo can restore it.
+    var previousAmountMinorUnits: Int64?
 
     init(id: UUID = UUID(), statementTransactionId: UUID, candidate: MatchCandidate, isAmbiguous: Bool, isPrimary: Bool) {
         self.id = id; self.statementTransactionId = statementTransactionId; self.transactionId = candidate.transactionId

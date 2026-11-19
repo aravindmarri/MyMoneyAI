@@ -25,7 +25,7 @@ enum StatementImportError: Error, Equatable, LocalizedError {
 /// MoneyTransaction: matching only proposes, and the user confirms in review (Phase C).
 @MainActor
 final class StatementRepository {
-    private let context: ModelContext
+    let context: ModelContext
 
     init(context: ModelContext) { self.context = context }
 
@@ -174,7 +174,7 @@ final class StatementRepository {
             lines: lines.map(\.input), existing: existing,
             account: ReconciliationAccount(paymentMethodId: account.linkedPaymentMethodId, isCreditCard: account.accountType == .creditCard,
                                            displayName: account.nickname),
-            alreadyMatched: try alreadyMatchedTransactionIds(excludingStatement: statementId), learnedAliases: try learnedAliases())
+            alreadyMatched: try blockedTransactionIds(forAccount: account.id, excludingStatement: statementId), learnedAliases: try learnedAliases())
         let byId = Dictionary(uniqueKeysWithValues: lines.map { ($0.id, $0) })
         for r in results {
             guard let line = byId[r.lineId] else { continue }

@@ -35,7 +35,7 @@ enum TransactionType: String, Codable, CaseIterable, Identifiable, Sendable {
 }
 
 enum TransactionSource: String, Codable, Sendable {
-    case manual, receiptOCR, csvImport
+    case manual, receiptOCR, csvImport, statementImport
 
     /// Unknown values (from a newer app version's backup) read as `.manual` instead of failing the import.
     var displayName: String {
@@ -43,6 +43,7 @@ enum TransactionSource: String, Codable, Sendable {
         case .manual: "Manual"
         case .receiptOCR: "Receipt"
         case .csvImport: "CSV import"
+        case .statementImport: "Statement import"
         }
     }
 
