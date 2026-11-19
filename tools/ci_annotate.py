@@ -53,7 +53,9 @@ def main(paths) -> None:
             with open(path, encoding="utf-8", errors="replace") as f:
                 for raw in f:
                     line = raw.strip()
-                    if re.search(r"\berror\b[:]|\bfatal\b|Undefined symbol|failed with a nonzero exit code", line, re.I):
+                    if re.search(r"\berror\b[:]|\bfatal\b|Undefined symbol|failed with a nonzero exit code"
+                                 r"|^✘|Test Case .* failed|recorded an issue|Expectation failed|crashed|unexpected exit",
+                                 line, re.I):
                         key = ("", "", line)
                         if key not in seen:
                             seen.add(key)
