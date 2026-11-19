@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 import UIKit
-@testable import MyMoneyAI
+@testable import TallySeam
 
 // MARK: - OCR line assembly and on-device Vision
 

@@ -14,11 +14,11 @@ permissions:
   contents: read
 
 env:
-  SCHEME: MyMoneyAI
-  PROJECT: MyMoneyAI.xcodeproj
+  SCHEME: TallySeam
+  PROJECT: TallySeam.xcodeproj
   # Must match PRODUCT_BUNDLE_IDENTIFIER in project.yml. Keeping it stable lets a re-signed
   # build install over the previous one and keep the app's data.
-  EXPECTED_BUNDLE_ID: io.github.aravindmarri.mymoneyai
+  EXPECTED_BUNDLE_ID: io.github.aravindmarri.tallyseam
 
 jobs:
   build-and-test:
@@ -167,7 +167,7 @@ jobs:
             -project "$PROJECT" -scheme "$SCHEME" \
             -configuration Release \
             -destination "generic/platform=iOS" \
-            -archivePath build/MyMoneyAI.xcarchive \
+            -archivePath build/TallySeam.xcarchive \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             2>&1 | tee build/logs/archive.log
@@ -178,7 +178,7 @@ jobs:
 
       - name: Package unsigned IPA
         run: |
-          APP=build/MyMoneyAI.xcarchive/Products/Applications/MyMoneyAI.app
+          APP=build/TallySeam.xcarchive/Products/Applications/TallySeam.app
           test -d "$APP"
           mkdir -p build/ipa/Payload
           cp -R "$APP" build/ipa/Payload/
@@ -196,17 +196,17 @@ jobs:
           set -euo pipefail
           rm -rf build/verify && mkdir -p build/verify
           unzip -q build/TallySeam-unsigned.ipa -d build/verify
-          APP=build/verify/Payload/MyMoneyAI.app
-          test -f "$APP/MyMoneyAI" || { echo "::error::Payload/MyMoneyAI.app/MyMoneyAI missing"; exit 1; }
+          APP=build/verify/Payload/TallySeam.app
+          test -f "$APP/TallySeam" || { echo "::error::Payload/TallySeam.app/TallySeam missing"; exit 1; }
           BUNDLE_ID=$(plutil -extract CFBundleIdentifier raw "$APP/Info.plist")
           PLATFORM=$(plutil -extract DTPlatformName raw "$APP/Info.plist")
           SUPPORTED=$(plutil -extract CFBundleSupportedPlatforms.0 raw "$APP/Info.plist")
           VERSION=$(plutil -extract CFBundleShortVersionString raw "$APP/Info.plist")
           BUILD=$(plutil -extract CFBundleVersion raw "$APP/Info.plist")
           MIN_OS=$(plutil -extract MinimumOSVersion raw "$APP/Info.plist")
-          ARCHS=$(lipo -archs "$APP/MyMoneyAI")
-          BUILD_PLATFORM=$(vtool -show-build "$APP/MyMoneyAI" | awk '/platform/ {print $2; exit}')
-          LINKED=$(otool -L "$APP/MyMoneyAI" | tail -n +2 | awk '{print $1}')
+          ARCHS=$(lipo -archs "$APP/TallySeam")
+          BUILD_PLATFORM=$(vtool -show-build "$APP/TallySeam" | awk '/platform/ {print $2; exit}')
+          LINKED=$(otool -L "$APP/TallySeam" | tail -n +2 | awk '{print $1}')
           echo "$LINKED"
           FAIL=0
           [ "$BUNDLE_ID" = "$EXPECTED_BUNDLE_ID" ] || { echo "::error::Bundle ID $BUNDLE_ID, expected $EXPECTED_BUNDLE_ID"; FAIL=1; }

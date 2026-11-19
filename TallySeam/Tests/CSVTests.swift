@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// CSV import and export. Synthetic data only; fixed calendar so results don't depend on the runner.
 final class CSVParserTests: XCTestCase {

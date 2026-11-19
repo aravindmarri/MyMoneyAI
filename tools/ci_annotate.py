@@ -43,7 +43,7 @@ def main(paths) -> None:
                     key = (t["file"], t["line"], t["msg"])
                     if key not in seen:
                         seen.add(key)
-                        errors.append((f"MyMoneyAI/Tests/{os.path.basename(t['file'])}", t["line"], "1",
+                        errors.append((f"TallySeam/Tests/{os.path.basename(t['file'])}", t["line"], "1",
                                        f"{t['name']}: {t['msg']}"))
     if not errors:
         # Fallback: errors without file:line:col (linker, build system, crashes).

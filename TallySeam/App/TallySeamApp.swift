@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct MyMoneyAIApp: App {
+struct TallySeamApp: App {
     @State private var launch: Result<AppContainer, Error>
 
     init() {

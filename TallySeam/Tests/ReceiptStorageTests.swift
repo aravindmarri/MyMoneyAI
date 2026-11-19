@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// File storage and SwiftData linking for receipts. Uses a temporary directory and an in-memory store.
 @MainActor
@@ -52,7 +52,7 @@ final class ReceiptStorageTests: XCTestCase {
     }
 
     func testRejectsPathTraversal() {
-        XCTAssertThrowsError(try storage.url(forRelativePath: "../Store/MyMoney.store"))
+        XCTAssertThrowsError(try storage.url(forRelativePath: "../Store/TallySeam.store"))
         XCTAssertThrowsError(try storage.url(forRelativePath: "Receipts/../../secret.jpg"))
         XCTAssertNil(storage.loadData(relativePath: "/etc/passwd"))
     }

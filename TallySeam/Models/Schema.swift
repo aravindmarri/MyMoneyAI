@@ -8,10 +8,10 @@ import SwiftData
 /// versions and migrate them. To change a model: copy its current definition into the latest
 /// version's enum as a nested type, add a new version that references the live type, and append a
 /// MigrationStage (lightweight where possible). Never edit a frozen copy.
-enum MyMoneySchemaV1: VersionedSchema {
+enum TallySeamSchemaV1: VersionedSchema {
     static var versionIdentifier: Schema.Version { Schema.Version(1, 0, 0) }
     static var models: [any PersistentModel.Type] {
-        [MyMoneySchemaV1.MoneyTransaction.self, SpendingCategory.self, PaymentMethod.self, Receipt.self,
+        [TallySeamSchemaV1.MoneyTransaction.self, SpendingCategory.self, PaymentMethod.self, Receipt.self,
          RecurringBill.self, Budget.self, AppSettings.self]
     }
 
@@ -50,7 +50,7 @@ enum MyMoneySchemaV1: VersionedSchema {
 
 /// 2.0.0: MoneyTransaction gains `countedMonth` (count a transaction in another month, e.g. a
 /// November salary paid in late October). Optional with no value, so existing rows keep their meaning.
-enum MyMoneySchemaV2: VersionedSchema {
+enum TallySeamSchemaV2: VersionedSchema {
     static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
     static var models: [any PersistentModel.Type] {
         [MoneyTransaction.self, SpendingCategory.self, PaymentMethod.self, Receipt.self,
@@ -60,21 +60,21 @@ enum MyMoneySchemaV2: VersionedSchema {
 
 /// 3.0.0: statement import and reconciliation. Adds new models only (no existing model changes),
 /// so 2.0.0 keeps referencing the live types and a lightweight stage adds the new tables.
-enum MyMoneySchemaV3: VersionedSchema {
+enum TallySeamSchemaV3: VersionedSchema {
     static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
     static var models: [any PersistentModel.Type] {
-        MyMoneySchemaV2.models + [FinancialAccount.self, ImportSession.self, ImportedStatement.self,
+        TallySeamSchemaV2.models + [FinancialAccount.self, ImportSession.self, ImportedStatement.self,
                                   StatementTransaction.self, ReconciliationMatch.self, MerchantAlias.self]
     }
 }
 
 /// The schema every container opens with.
-typealias MyMoneyCurrentSchema = MyMoneySchemaV3
+typealias TallySeamCurrentSchema = TallySeamSchemaV3
 
-enum MyMoneyMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [MyMoneySchemaV1.self, MyMoneySchemaV2.self, MyMoneySchemaV3.self] }
+enum TallySeamMigrationPlan: SchemaMigrationPlan {
+    static var schemas: [any VersionedSchema.Type] { [TallySeamSchemaV1.self, TallySeamSchemaV2.self, TallySeamSchemaV3.self] }
     static var stages: [MigrationStage] {
-        [.lightweight(fromVersion: MyMoneySchemaV1.self, toVersion: MyMoneySchemaV2.self),
-         .lightweight(fromVersion: MyMoneySchemaV2.self, toVersion: MyMoneySchemaV3.self)]
+        [.lightweight(fromVersion: TallySeamSchemaV1.self, toVersion: TallySeamSchemaV2.self),
+         .lightweight(fromVersion: TallySeamSchemaV2.self, toVersion: TallySeamSchemaV3.self)]
     }
 }

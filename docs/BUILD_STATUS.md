@@ -11,7 +11,7 @@ Development happens on Windows. iOS builds and tests run on GitHub Actions (`.gi
 | iOS Simulator compile | **Pass** (GitHub Actions) |
 | Automated tests | **Pass: 216 of 216** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
 | Unsigned device archive | **Pass.** `TallySeam-unsigned-ipa` artifact (1,454,896 bytes, kept for 14 days) |
-| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.mymoneyai`, version 1.0 (30), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
+| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.tallyseam`, version 1.0 (30), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
 | Network-use checks | **Pass.** Static source scan, linked-framework check on the IPA, and a runtime test showing OCR, calculations and backups make no requests |
 | Run on a real iPhone | **Not done.** Install with Sideloadly and a free Apple Account: see README → INSTALL_ON_IPHONE |
 | Manual UI check (layout, VoiceOver, Dynamic Type, dark mode) | **Not done** |
@@ -132,7 +132,7 @@ Run: https://github.com/aravindmarri/TallySeam/actions/runs/44615699623
 - Set Up Accounts adds Cash, debit and credit cards in one step (e.g. Wells Fargo Debit, Capital One Credit, American Express Credit); payment methods can be added from the transaction editor; new transactions start with the last-used method
 
 **Install readiness**
-- Stable bundle ID `io.github.aravindmarri.mymoneyai`, so a re-signed build installs over the previous one and keeps its data. The build number is the CI run number
+- Stable bundle ID `io.github.aravindmarri.tallyseam`, so a re-signed build installs over the previous one and keeps its data. The build number is the CI run number
 - CI unzips the IPA and fails unless it is the real arm64 iPhone device build
 
 ## Tests (216, all passing in CI run #30)
@@ -173,7 +173,7 @@ Xcode counts parameterized cases separately, which is why the total is 216. All 
 ## Building
 
 - **CI:** every push to `main` builds, runs the tests and produces the unsigned IPA.
-- **Mac (optional):** Xcode 16+, `brew install xcodegen`, `xcodegen generate`, then build and test the `MyMoneyAI` scheme.
+- **Mac (optional):** Xcode 16+, `brew install xcodegen`, `xcodegen generate`, then build and test the `TallySeam` scheme.
 
 ## Next tasks
 

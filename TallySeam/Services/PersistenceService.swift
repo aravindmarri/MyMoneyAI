@@ -13,24 +13,23 @@ final class PersistenceService {
 
     /// Opens (or creates) a store at a specific file. Used by tests that close and reopen a real on-disk store.
     init(storeURL: URL) throws {
-        let schema = Schema(versionedSchema: MyMoneyCurrentSchema.self)
+        let schema = Schema(versionedSchema: TallySeamCurrentSchema.self)
         let configuration = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
-        container = try ModelContainer(for: schema, migrationPlan: MyMoneyMigrationPlan.self, configurations: [configuration])
+        container = try ModelContainer(for: schema, migrationPlan: TallySeamMigrationPlan.self, configurations: [configuration])
     }
 
     static func makeContainer(inMemory: Bool) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: MyMoneyCurrentSchema.self)
+        let schema = Schema(versionedSchema: TallySeamCurrentSchema.self)
         let configuration: ModelConfiguration
         if inMemory {
             configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         } else {
             configuration = ModelConfiguration(schema: schema, url: try storeURL(), cloudKitDatabase: .none)
         }
-        return try ModelContainer(for: schema, migrationPlan: MyMoneyMigrationPlan.self, configurations: [configuration])
+        return try ModelContainer(for: schema, migrationPlan: TallySeamMigrationPlan.self, configurations: [configuration])
     }
 
-    /// Application Support/Store/MyMoney.store, protected with iOS Data Protection. The file name is
-    /// from the app's original name and must never change, or existing data would not be found.
+    /// Application Support/Store/TallySeam.store, protected with iOS Data Protection.
     /// `completeUntilFirstUserAuthentication` keeps the store encrypted at rest until the first unlock after boot.
     static func storeURL() throws -> URL {
         let fm = FileManager.default
@@ -40,7 +39,7 @@ final class PersistenceService {
         #if os(iOS)
         try fm.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: dir.path)
         #endif
-        return dir.appending(path: "MyMoney.store")
+        return dir.appending(path: "TallySeam.store")
     }
 
     /// Seeds system categories and the settings row on first launch. Idempotent.

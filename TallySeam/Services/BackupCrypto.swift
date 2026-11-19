@@ -32,9 +32,11 @@ enum BackupError: Error, Equatable, LocalizedError {
 /// - the header (format, version, iterations, salt) is authenticated as additional data,
 ///   so it can't be altered without detection.
 enum BackupCrypto {
-    /// Format tag written into every backup. Kept from the app's original name (MyMoney AI) so
-    /// existing backups keep opening. Never change it.
-    static let format = "MyMoneyAI-Backup"
+    /// Format tag written into every new backup.
+    static let format = "TallySeam-Backup"
+    /// Tags that can still be opened: backups made before the app was renamed (MyMoney AI) can be
+    /// imported into TallySeam.
+    static let readableFormats: Set<String> = [format, "MyMoneyAI-Backup"]
     static let version = 1
     static let defaultIterations = 600_000
     static let allowedIterations = 100_000...10_000_000
@@ -56,11 +58,11 @@ enum BackupCrypto {
         password.count >= minimumPasswordLength
     }
 
-    static func encrypt(_ plaintext: Data, password: String, iterations: Int = defaultIterations) throws -> Data {
+    static func encrypt(_ plaintext: Data, password: String, iterations: Int = defaultIterations, format: String = BackupCrypto.format) throws -> Data {
         guard isAcceptable(password: password) else { throw BackupError.weakPassword }
         let salt = randomBytes(16)
         let key = try deriveKey(password: password, salt: salt, iterations: iterations)
-        let aad = additionalData(version: version, iterations: iterations, salt: salt)
+        let aad = additionalData(format: format, version: version, iterations: iterations, salt: salt)
         let box = try AES.GCM.seal(plaintext, using: key, authenticating: aad)
         guard let combined = box.combined else { throw BackupError.keyDerivationFailed }
         let envelope = Envelope(format: format, version: version, kdf: "PBKDF2-HMAC-SHA256", iterations: iterations,
@@ -72,14 +74,14 @@ enum BackupCrypto {
 
     static func decrypt(_ file: Data, password: String) throws -> Data {
         guard file.count <= maximumFileBytes else { throw BackupError.tooLarge }
-        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: file), envelope.format == format else {
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: file), readableFormats.contains(envelope.format) else {
             throw BackupError.notABackup
         }
         guard envelope.version == version else { throw BackupError.unsupportedVersion }
         guard envelope.kdf == "PBKDF2-HMAC-SHA256", envelope.cipher == "AES-256-GCM",
               allowedIterations.contains(envelope.iterations), envelope.salt.count >= 16 else { throw BackupError.notABackup }
         let key = try deriveKey(password: password, salt: envelope.salt, iterations: envelope.iterations)
-        let aad = additionalData(version: envelope.version, iterations: envelope.iterations, salt: envelope.salt)
+        let aad = additionalData(format: envelope.format, version: envelope.version, iterations: envelope.iterations, salt: envelope.salt)
         do {
             let box = try AES.GCM.SealedBox(combined: envelope.sealed)
             return try AES.GCM.open(box, using: key, authenticating: aad)
@@ -106,7 +108,7 @@ enum BackupCrypto {
         return SymmetricKey(data: derived)
     }
 
-    private static func additionalData(version: Int, iterations: Int, salt: Data) -> Data {
+    private static func additionalData(format: String, version: Int, iterations: Int, salt: Data) -> Data {
         Data("\(format)|\(version)|\(iterations)|\(salt.base64EncodedString())".utf8)
     }
 

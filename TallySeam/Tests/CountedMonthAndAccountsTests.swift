@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// Counting a transaction in another month (early salary) and quick account setup. Synthetic data only.
 final class CountedMonthTests: XCTestCase {
@@ -125,17 +125,17 @@ final class SchemaV2MigrationTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appending(path: "MigrationV2-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let url = folder.appending(path: "MyMoney.store")
+        let url = folder.appending(path: "TallySeam.store")
         let txId = UUID(), categoryId = UUID(), methodId = UUID()
         let when = Date(timeIntervalSince1970: 1_790_000_000)
 
         // Write the store exactly as app builds up to 1.0 (16) did: schema 1.0.0.
         do {
-            let schema = Schema(versionedSchema: MyMoneySchemaV1.self)
+            let schema = Schema(versionedSchema: TallySeamSchemaV1.self)
             let config = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
             let container = try ModelContainer(for: schema, configurations: [config])
             let context = ModelContext(container)
-            context.insert(MyMoneySchemaV1.MoneyTransaction(id: txId, transactionDate: when, amountMinorUnits: 4_780, currencyCode: "USD",
+            context.insert(TallySeamSchemaV1.MoneyTransaction(id: txId, transactionDate: when, amountMinorUnits: 4_780, currencyCode: "USD",
                                                             title: "Synthetic groceries", transactionTypeRaw: "expense", isRefund: true))
             context.insert(SpendingCategory(id: categoryId, name: "Hobbies", symbol: "star", colorIdentifier: "blue",
                                             kind: .expense, isSystemCategory: false, displayOrder: 99))

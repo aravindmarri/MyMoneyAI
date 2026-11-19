@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import Testing
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 // MARK: - Backup encryption
 
@@ -250,5 +250,21 @@ final class BackupServiceTests: XCTestCase {
         XCTAssertEqual(try p.context.fetchCount(FetchDescriptor<Receipt>()), 1, "The attached receipt is kept")
         XCTAssertEqual(try storage.orphanedPaths(referenced: []).count, 1)
         XCTAssertEqual(try TransactionRepository(context: p.context).allRecords().count, 2, "Transactions are not touched")
+    }
+}
+
+/// Backups made before the rename (MyMoney AI) still open in TallySeam; unknown formats don't.
+final class BackupFormatCompatibilityTests: XCTestCase {
+    func testOldAndNewFormatsOpen() throws {
+        let data = Data("synthetic backup".utf8)
+        let new = try BackupCrypto.encrypt(data, password: "synthetic-pass", iterations: 100_000)
+        XCTAssertTrue(String(decoding: new, as: UTF8.self).contains("TallySeam-Backup"))
+        XCTAssertEqual(try BackupCrypto.decrypt(new, password: "synthetic-pass"), data)
+        let old = try BackupCrypto.encrypt(data, password: "synthetic-pass", iterations: 100_000, format: "MyMoneyAI-Backup")
+        XCTAssertEqual(try BackupCrypto.decrypt(old, password: "synthetic-pass"), data)
+        let other = try BackupCrypto.encrypt(data, password: "synthetic-pass", iterations: 100_000, format: "SomethingElse")
+        XCTAssertThrowsError(try BackupCrypto.decrypt(other, password: "synthetic-pass")) {
+            XCTAssertEqual($0 as? BackupError, .notABackup)
+        }
     }
 }

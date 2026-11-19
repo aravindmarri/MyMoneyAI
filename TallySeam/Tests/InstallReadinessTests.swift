@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import UIKit
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// Data must survive force-closing the app and installing updates. These tests use a real on-disk
 /// SwiftData store that is closed and reopened, which is what happens when iOS terminates the app.
@@ -19,7 +19,7 @@ final class PersistenceAcrossRestartTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var storeURL: URL { folder.appending(path: "MyMoney.store") }
+    private var storeURL: URL { folder.appending(path: "TallySeam.store") }
 
     func testEverythingSurvivesClosingAndReopeningTheStore() throws {
         var expectedTransactions: [TransactionRecord] = []
@@ -81,26 +81,26 @@ final class UpdateCompatibilityTests: XCTestCase {
     func testLatestVersionedSchemaCoversEveryModel() {
         // If a model is added or changed, a new VersionedSchema and MigrationStage must be added,
         // otherwise existing users' stores would fail to open after an update.
-        let latest = MyMoneyMigrationPlan.schemas.last.map { ObjectIdentifier($0) }
-        XCTAssertEqual(latest, ObjectIdentifier(MyMoneySchemaV3.self))
-        XCTAssertEqual(ObjectIdentifier(MyMoneyCurrentSchema.self), ObjectIdentifier(MyMoneySchemaV3.self))
+        let latest = TallySeamMigrationPlan.schemas.last.map { ObjectIdentifier($0) }
+        XCTAssertEqual(latest, ObjectIdentifier(TallySeamSchemaV3.self))
+        XCTAssertEqual(ObjectIdentifier(TallySeamCurrentSchema.self), ObjectIdentifier(TallySeamSchemaV3.self))
         let expected: Set<String> = ["MoneyTransaction", "SpendingCategory", "PaymentMethod", "Receipt", "RecurringBill", "Budget", "AppSettings"]
         let expectedV3 = expected.union(["FinancialAccount", "ImportSession", "ImportedStatement", "StatementTransaction",
                                          "ReconciliationMatch", "MerchantAlias"])
-        XCTAssertEqual(Set(MyMoneySchemaV3.models.map { String(describing: $0) }), expectedV3)
-        XCTAssertEqual(MyMoneySchemaV3.versionIdentifier, Schema.Version(3, 0, 0))
-        XCTAssertEqual(Set(MyMoneySchemaV2.models.map { String(describing: $0) }), expected)
-        XCTAssertEqual(Set(MyMoneySchemaV1.models.map { String(describing: $0) }), expected)
-        XCTAssertEqual(MyMoneySchemaV1.versionIdentifier, Schema.Version(1, 0, 0))
-        XCTAssertEqual(MyMoneySchemaV2.versionIdentifier, Schema.Version(2, 0, 0))
-        XCTAssertEqual(MyMoneyMigrationPlan.stages.count, MyMoneyMigrationPlan.schemas.count - 1)
+        XCTAssertEqual(Set(TallySeamSchemaV3.models.map { String(describing: $0) }), expectedV3)
+        XCTAssertEqual(TallySeamSchemaV3.versionIdentifier, Schema.Version(3, 0, 0))
+        XCTAssertEqual(Set(TallySeamSchemaV2.models.map { String(describing: $0) }), expected)
+        XCTAssertEqual(Set(TallySeamSchemaV1.models.map { String(describing: $0) }), expected)
+        XCTAssertEqual(TallySeamSchemaV1.versionIdentifier, Schema.Version(1, 0, 0))
+        XCTAssertEqual(TallySeamSchemaV2.versionIdentifier, Schema.Version(2, 0, 0))
+        XCTAssertEqual(TallySeamMigrationPlan.stages.count, TallySeamMigrationPlan.schemas.count - 1)
     }
 
     func testStoreWrittenByThisVersionOpensThroughTheMigrationPlan() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "UpdateTests-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let url = folder.appending(path: "MyMoney.store")
+        let url = folder.appending(path: "TallySeam.store")
         let id = UUID()
         do {
             let old = try PersistenceService(storeURL: url)

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// In-memory SwiftData tests for Phase 2 repositories. Synthetic data only.
 @MainActor

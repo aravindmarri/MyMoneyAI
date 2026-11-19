@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 @MainActor
 final class PersistenceTests: XCTestCase {

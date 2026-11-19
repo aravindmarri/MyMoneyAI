@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// Statement matching (Phase B). Synthetic data only; fixed calendar.
 final class MerchantNormalizerTests: XCTestCase {
@@ -310,7 +310,7 @@ final class StatementRepositoryTests: XCTestCase {
 @MainActor
 final class SchemaV3MigrationTests: XCTestCase {
     private var folder: URL!
-    private var url: URL { folder.appending(path: "MyMoney.store") }
+    private var url: URL { folder.appending(path: "TallySeam.store") }
     private let txId = UUID()
 
     override func setUp() async throws {
@@ -322,7 +322,7 @@ final class SchemaV3MigrationTests: XCTestCase {
 
     /// Writes a store exactly as app builds 1.0 (19)–(22) did: schema 2.0.0.
     private func writeVersion2Store() throws {
-        let schema = Schema(versionedSchema: MyMoneySchemaV2.self)
+        let schema = Schema(versionedSchema: TallySeamSchemaV2.self)
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)])
         let context = ModelContext(container)
         context.insert(MoneyTransaction(record: TransactionRecord(id: txId, transactionDate: Date(timeIntervalSince1970: 1_790_000_000),

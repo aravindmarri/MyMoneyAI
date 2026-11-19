@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import Testing
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 private func utcCalendar() -> Calendar {
     var c = Calendar(identifier: .gregorian)

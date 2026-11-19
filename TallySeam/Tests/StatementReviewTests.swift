@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// Phase C: reviewing a saved statement. In-memory store, synthetic statements, fixed calendar.
 @MainActor

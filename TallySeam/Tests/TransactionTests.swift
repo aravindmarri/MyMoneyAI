@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MyMoneyAI
+@testable import TallySeam
 
 @Suite struct TransactionDraftTests {
     let groceries = UUID()

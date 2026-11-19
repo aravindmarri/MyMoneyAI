@@ -29,7 +29,7 @@ View ──@Query──▶ SwiftData (read)
 
 - **Enums:** stored as raw `String` values with typed computed accessors.
 - **Snapshots:** each model has a matching `Codable` `*Record` value type where needed. `TransactionRecord` is what calculations use.
-- **Schema versioning:** `MyMoneySchemaV1` plus `MyMoneyMigrationPlan`. For V2, copy the V1 models into the schema enum as
+- **Schema versioning:** `TallySeamSchemaV1` plus `TallySeamMigrationPlan`. For V2, copy the V1 models into the schema enum as
   frozen nested types, then add a `MigrationStage`. Phase 2 added `transferDestinationPaymentMethodId` with a default value.
   No version has shipped yet, so this stays in V1.
 

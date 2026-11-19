@@ -3,7 +3,7 @@ import CoreGraphics
 import PDFKit
 import UIKit
 import XCTest
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// Synthetic statements, generated in code. No real bank or card documents are used anywhere.
 enum StatementFixtures {

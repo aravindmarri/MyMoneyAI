@@ -11,7 +11,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-APP = ROOT / "MyMoneyAI"
+APP = ROOT / "TallySeam"
 PAIRS = {")": "(", "]": "[", "}": "{"}
 
 
@@ -101,8 +101,8 @@ def main() -> int:
             seen[key] = f.relative_to(ROOT)
         if not is_test:
             check_offline(f, errors)
-        if is_test and "@testable import MyMoneyAI" not in text:
-            errors.append(f"{f.relative_to(ROOT)}: test file missing '@testable import MyMoneyAI'")
+        if is_test and "@testable import TallySeam" not in text:
+            errors.append(f"{f.relative_to(ROOT)}: test file missing '@testable import TallySeam'")
     print(f"Checked {len(files)} Swift files.")
     for e in errors:
         print("ERROR", e)

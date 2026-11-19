@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MyMoneyAI
+@testable import TallySeam
 
 /// All receipts below are synthetic: invented merchants, items and amounts.
 @Suite struct ReceiptParserTests {

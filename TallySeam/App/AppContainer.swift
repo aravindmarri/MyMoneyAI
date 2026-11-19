@@ -60,7 +60,7 @@ final class AppContainer {
         // swiftlint:disable:next force_try
         let persistence = try! PersistenceService(inMemory: true)
         try? persistence.seedDefaultsIfNeeded()
-        let storage = ReceiptStorageService(rootURL: FileManager.default.temporaryDirectory.appending(path: "MyMoneyAIPreview"))
+        let storage = ReceiptStorageService(rootURL: FileManager.default.temporaryDirectory.appending(path: "TallySeamPreview"))
         return AppContainer(persistence: persistence, receiptStorage: storage)
     }
 }

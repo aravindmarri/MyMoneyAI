@@ -1,7 +1,8 @@
 # TallySeam
 
-> Formerly *TallySeam*. The repository, Xcode project and internal app ID keep the old name, so the
-> app installs over earlier builds and keeps your data.
+> Formerly *MyMoney AI*. TallySeam has its own app ID (`io.github.aravindmarri.tallyseam`), so on an iPhone it
+> installs as a new, empty app next to the old one. To bring your data over, export an encrypted backup from the
+> old app (Settings → Backup & Data) and import it into TallySeam; old backups are still accepted.
 
 An offline, private iPhone app for tracking income, expenses, receipts and bills.
 It is built with SwiftUI, SwiftData, Swift Charts and Apple Vision, targets iOS 17+, and uses no third-party packages, accounts or network access.
@@ -12,9 +13,9 @@ It is built with SwiftUI, SwiftData, Swift Charts and Apple Vision, targets iOS 
 ## Repository layout
 
 ```
-MyMoneyAI/                ← repository root
+TallySeam/                ← repository root
 ├── project.yml           ← XcodeGen spec (source of truth for the Xcode project)
-├── MyMoneyAI/            ← app sources (this is the source folder, not a nested project)
+├── TallySeam/            ← app sources (this is the source folder, not a nested project)
 │   ├── App/  Models/  Features/  Services/  Components/  Utilities/  Resources/
 │   └── Tests/            ← unit tests (Swift Testing + XCTest), synthetic data only
 ├── tools/check_sources.py← static checks that run on Windows
@@ -44,7 +45,7 @@ Install and test TallySeam on your own iPhone from a Windows PC, **free**: no pa
 3. Under **Artifacts**, download **`TallySeam-unsigned-ipa`**. GitHub delivers it as a ZIP, so unzip it to get **`TallySeam-unsigned.ipa`**.
 4. Artifacts are kept for 14 days. If they have expired, open **iOS Build → Run workflow** on `main` to build a fresh one. This is free for a public repository.
 
-The IPA is **unsigned and can't be installed as-is**. Sideloadly signs it with your Apple Account in the next step. CI checks that it is the real arm64 iPhone app (not the simulator build) with bundle ID `io.github.aravindmarri.mymoneyai`.
+The IPA is **unsigned and can't be installed as-is**. Sideloadly signs it with your Apple Account in the next step. CI checks that it is the real arm64 iPhone app (not the simulator build) with bundle ID `io.github.aravindmarri.tallyseam`.
 
 ### 2. Prepare the iPhone (first time only)
 
@@ -118,7 +119,7 @@ brew install xcodegen
 ```
 
 ```bash
-git clone https://github.com/aravindmarri/TallySeam.git && cd MyMoneyAI
+git clone https://github.com/aravindmarri/TallySeam.git && cd TallySeam
 ```
 
 ```bash
@@ -126,10 +127,10 @@ xcodegen generate
 ```
 
 ```bash
-xcodebuild -project MyMoneyAI.xcodeproj -scheme MyMoneyAI -destination 'platform=iOS Simulator,name=iPhone 16' build test
+xcodebuild -project TallySeam.xcodeproj -scheme TallySeam -destination 'platform=iOS Simulator,name=iPhone 16' build test
 ```
 
-To run on an iPhone from a Mac, open `MyMoneyAI.xcodeproj` in Xcode, set your Team under *Signing & Capabilities* for the MyMoneyAI target, choose your device, and run. Without a Mac, see [INSTALL_ON_IPHONE](#install_on_iphone).
+To run on an iPhone from a Mac, open `TallySeam.xcodeproj` in Xcode, set your Team under *Signing & Capabilities* for the TallySeam target, choose your device, and run. Without a Mac, see [INSTALL_ON_IPHONE](#install_on_iphone).
 
 After the first Mac build, record the results in `docs/BUILD_STATUS.md`.
 
