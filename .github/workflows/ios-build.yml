@@ -125,7 +125,16 @@ jobs:
           import json
           s = json.load(open("build/summary.json"))
           keys = ["result", "totalTestCount", "passedTests", "failedTests", "skippedTests", "expectedFailures"]
-          print("::notice title=Test results::" + ", ".join(f"{k}={s.get(k)}" for k in keys))'
+          print("::notice title=Test results::" + ", ".join(f"{k}={s.get(k)}" for k in keys))
+          for f in (s.get("testFailures") or [])[:10]:
+              name = f.get("testIdentifierString") or f.get("testName") or "?"
+              text = (f.get("failureText") or "").replace("\n", " ")[:800]
+              print(f"::error title=Failed test::{name}: {text}")'
+          # Name the test that was running when a crash restarted the test process.
+          if grep -q "Restarting after unexpected exit" build/logs/test.log; then
+            grep -nE "Test Case '.*' started|Test case '.*' started|Restarting after unexpected exit" build/logs/test.log \
+              | grep -B1 "Restarting after unexpected exit" | head -6 | sed 's/^/::error title=Crash context::/'
+          fi
 
       - name: Upload logs and test results
         if: always()
