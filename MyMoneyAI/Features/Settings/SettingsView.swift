@@ -59,7 +59,7 @@ struct PrivacyInfoView: View {
                 Label("Receipts read on-device with Apple Vision", systemImage: "text.viewfinder")
             }
             Section {
-                Text("MyMoney AI stores your records in an encrypted-at-rest database protected by iOS Data Protection. It never connects to your bank and never stores full card numbers.")
+                Text("TallySeam stores your records in an encrypted-at-rest database protected by iOS Data Protection. It never connects to your bank and never stores full card numbers.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }

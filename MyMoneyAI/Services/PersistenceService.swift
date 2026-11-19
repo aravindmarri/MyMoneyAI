@@ -29,7 +29,8 @@ final class PersistenceService {
         return try ModelContainer(for: schema, migrationPlan: MyMoneyMigrationPlan.self, configurations: [configuration])
     }
 
-    /// Application Support/Store/MyMoney.store, protected with iOS Data Protection.
+    /// Application Support/Store/MyMoney.store, protected with iOS Data Protection. The file name is
+    /// from the app's original name and must never change, or existing data would not be found.
     /// `completeUntilFirstUserAuthentication` keeps the store encrypted at rest until the first unlock after boot.
     static func storeURL() throws -> URL {
         let fm = FileManager.default

@@ -14,11 +14,11 @@ enum BackupError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .weakPassword: "Use a password of at least \(BackupCrypto.minimumPasswordLength) characters."
-        case .notABackup: "This file isn't a MyMoney AI backup."
-        case .unsupportedVersion: "This backup was made by a newer version of MyMoney AI."
+        case .notABackup: "This file isn't a TallySeam backup."
+        case .unsupportedVersion: "This backup was made by a newer version of TallySeam."
         case .wrongPasswordOrDamaged: "The password is wrong or the file is damaged."
         case .invalidContents: "The backup contains invalid data. Nothing was imported."
-        case .tooLarge: "The file is too large to be a MyMoney AI backup."
+        case .tooLarge: "The file is too large to be a TallySeam backup."
         case .keyDerivationFailed: "The encryption key couldn't be created."
         }
     }
@@ -32,6 +32,8 @@ enum BackupError: Error, Equatable, LocalizedError {
 /// - the header (format, version, iterations, salt) is authenticated as additional data,
 ///   so it can't be altered without detection.
 enum BackupCrypto {
+    /// Format tag written into every backup. Kept from the app's original name (MyMoney AI) so
+    /// existing backups keep opening. Never change it.
     static let format = "MyMoneyAI-Backup"
     static let version = 1
     static let defaultIterations = 600_000

@@ -166,7 +166,7 @@ struct DataManagementView: View {
     }
 
     static func csvFilename(now: Date = .now) -> String {
-        "MyMoneyAI-Transactions-\(now.formatted(.iso8601.year().month().day()))"
+        "TallySeam-Transactions-\(now.formatted(.iso8601.year().month().day()))"
     }
 
     private func exportCSV() {
@@ -203,7 +203,7 @@ struct DataManagementView: View {
     }
 
     static func defaultFilename(now: Date = .now) -> String {
-        "MyMoneyAI-Backup-\(now.formatted(.iso8601.year().month().day()))"
+        "TallySeam-Backup-\(now.formatted(.iso8601.year().month().day()))"
     }
 
     private func run(_ action: () throws -> String) {

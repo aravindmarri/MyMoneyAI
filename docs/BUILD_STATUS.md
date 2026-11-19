@@ -10,7 +10,7 @@ Development happens on Windows. iOS builds and tests run on GitHub Actions (`.gi
 |---|---|
 | iOS Simulator compile | **Pass** (GitHub Actions) |
 | Automated tests | **Pass: 216 of 216** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
-| Unsigned device archive | **Pass.** `MyMoneyAI-unsigned-ipa` artifact (1,454,896 bytes, kept for 14 days) |
+| Unsigned device archive | **Pass.** `TallySeam-unsigned-ipa` artifact (1,454,896 bytes, kept for 14 days) |
 | IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.mymoneyai`, version 1.0 (30), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
 | Network-use checks | **Pass.** Static source scan, linked-framework check on the IPA, and a runtime test showing OCR, calculations and backups make no requests |
 | Run on a real iPhone | **Not done.** Install with Sideloadly and a free Apple Account: see README → INSTALL_ON_IPHONE |
@@ -18,7 +18,7 @@ Development happens on Windows. iOS builds and tests run on GitHub Actions (`.gi
 | Airplane-mode check on a device | **Not done.** The code makes no network calls, and Vision OCR ran offline in the simulator test |
 | Static source checks (`python tools/check_sources.py`) | **Pass:** 88 Swift files |
 
-Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44615699623
+Run: https://github.com/aravindmarri/TallySeam/actions/runs/44615699623
 
 ### CI history
 
@@ -49,7 +49,7 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44615699623
 
 ## About the unsigned IPA
 
-`MyMoneyAI-unsigned-ipa` is **not signed and cannot be installed on an iPhone as-is.** It must first be re-signed with your own Apple Account, for example with Sideloadly or AltStore. With a free Apple Account, apps signed this way expire after 7 days and must be re-signed. CI artifacts are kept for 14 days.
+`TallySeam-unsigned-ipa` is **not signed and cannot be installed on an iPhone as-is.** It must first be re-signed with your own Apple Account, for example with Sideloadly or AltStore. With a free Apple Account, apps signed this way expire after 7 days and must be re-signed. CI artifacts are kept for 14 days.
 
 ## Implemented features (compiled and covered by passing CI tests where noted)
 

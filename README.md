@@ -1,4 +1,7 @@
-# MyMoney AI
+# TallySeam
+
+> Formerly *TallySeam*. The repository, Xcode project and internal app ID keep the old name, so the
+> app installs over earlier builds and keeps your data.
 
 An offline, private iPhone app for tracking income, expenses, receipts and bills.
 It is built with SwiftUI, SwiftData, Swift Charts and Apple Vision, targets iOS 17+, and uses no third-party packages, accounts or network access.
@@ -22,7 +25,7 @@ The `.xcodeproj` is generated on the Mac and is not committed.
 
 ## INSTALL_ON_IPHONE
 
-Install and test MyMoney AI on your own iPhone from a Windows PC, **free**: no paid Apple Developer membership, no TestFlight, no Mac.
+Install and test TallySeam on your own iPhone from a Windows PC, **free**: no paid Apple Developer membership, no TestFlight, no Mac.
 
 > **Status:** CI builds the device app and checks it automatically (see [docs/BUILD_STATUS.md](docs/BUILD_STATUS.md)). Installing on a physical iPhone has **not been verified yet**. Please report what happens.
 
@@ -34,11 +37,11 @@ Install and test MyMoney AI on your own iPhone from a Windows PC, **free**: no p
 - **iTunes** and **iCloud** for Windows, downloaded **from apple.com, not the Microsoft Store**. Sideloadly needs Apple's device drivers from these installers.
 - **Sideloadly** from sideloadly.io (free)
 
-### 1. Download the app (`MyMoneyAI-unsigned-ipa`)
+### 1. Download the app (`TallySeam-unsigned-ipa`)
 
 1. Sign in to GitHub and open the repository's **Actions** tab, then the **iOS Build** workflow.
 2. Open the most recent run with a green tick on `main`.
-3. Under **Artifacts**, download **`MyMoneyAI-unsigned-ipa`**. GitHub delivers it as a ZIP, so unzip it to get **`MyMoneyAI-unsigned.ipa`**.
+3. Under **Artifacts**, download **`TallySeam-unsigned-ipa`**. GitHub delivers it as a ZIP, so unzip it to get **`TallySeam-unsigned.ipa`**.
 4. Artifacts are kept for 14 days. If they have expired, open **iOS Build → Run workflow** on `main` to build a fresh one. This is free for a public repository.
 
 The IPA is **unsigned and can't be installed as-is**. Sideloadly signs it with your Apple Account in the next step. CI checks that it is the real arm64 iPhone app (not the simulator build) with bundle ID `io.github.aravindmarri.mymoneyai`.
@@ -51,18 +54,18 @@ The IPA is **unsigned and can't be installed as-is**. Sideloadly signs it with y
 ### 3. Sign and install with Sideloadly
 
 1. Open Sideloadly. Your iPhone should appear under **iDevice**.
-2. Drag `MyMoneyAI-unsigned.ipa` into the window.
+2. Drag `TallySeam-unsigned.ipa` into the window.
 3. Enter your Apple Account email, then click **Start**. Enter the password and any two-factor code when Sideloadly asks; they go to Apple to create a free 7-day signing certificate.
 4. **Keep the bundle ID as it is.** In *Advanced options*, leave "Change Bundle ID" off. A constant bundle ID is what lets later installs replace the app **and keep its data**.
 5. When it finishes, on the iPhone go to **Settings → General → VPN & Device Management**, tap your Apple Account under *Developer App*, and tap **Trust**.
-6. Open **MyMoney AI**.
+6. Open **TallySeam**.
 
 ### 4. Refresh every 7 days (without losing data)
 
 With a free Apple Account, the signature lasts **7 days**. After that the app won't open, **but its data stays on the iPhone**.
 
 - To refresh, run step 3 again with the **same Apple Account** and the **same (unchanged) bundle ID**, using the same IPA or a newer one. Sideloadly installs over the existing app and your data is kept.
-- **Don't delete the app to refresh it.** Deleting an iPhone app erases its data, including MyMoney AI's database and receipt images.
+- **Don't delete the app to refresh it.** Deleting an iPhone app erases its data, including TallySeam's database and receipt images.
 - Updating to a newer build works the same way: download the newer artifact and install over the old one.
 - Free-account limits: up to 3 sideloaded apps at a time, and 10 new app IDs per 7 days. Keeping the bundle ID constant uses only one.
 - Optional: Sideloadly can refresh automatically over Wi-Fi while the PC is on. Manual refresh is enough.
@@ -90,7 +93,7 @@ Make a backup before every refresh or update, at least until on-device testing i
 
 ### A note on Sideloadly and your Apple Account
 
-Sideloadly is a free third-party tool, not made by Apple. It needs your Apple Account password to request the free signing certificate from Apple. If you'd rather not use your main account, create a separate free Apple Account for sideloading. MyMoney AI itself never sees your Apple Account and has no network access.
+Sideloadly is a free third-party tool, not made by Apple. It needs your Apple Account password to request the free signing certificate from Apple. If you'd rather not use your main account, create a separate free Apple Account for sideloading. TallySeam itself never sees your Apple Account and has no network access.
 
 ## Developing on Windows
 
@@ -115,7 +118,7 @@ brew install xcodegen
 ```
 
 ```bash
-git clone https://github.com/aravindmarri/MyMoneyAI.git && cd MyMoneyAI
+git clone https://github.com/aravindmarri/TallySeam.git && cd MyMoneyAI
 ```
 
 ```bash

@@ -159,7 +159,7 @@ struct PaymentMethodEditorView: View {
                             Text("Enter exactly 4 digits, or leave it empty.").font(.footnote).foregroundStyle(.red)
                         }
                     } footer: {
-                        Text("Never enter a full card number, security code or bank password. MyMoney AI only stores the last four digits.")
+                        Text("Never enter a full card number, security code or bank password. TallySeam only stores the last four digits.")
                     }
                 }
                 if type == .applePay {

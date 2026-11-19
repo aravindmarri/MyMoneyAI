@@ -139,10 +139,10 @@ struct CSVColumnMapping: Equatable, Sendable, Codable {
     var merchant: Int?
     var category: Int?
     var notes: Int?
-    /// MyMoney AI's own "Type" column (Income/Expense/Transfer/Adjustment). Overrides the sign.
+    /// TallySeam's own "Type" column (Income/Expense/Transfer/Adjustment). Overrides the sign.
     var type: Int?
     var refund: Int?
-    /// MyMoney AI's own "Counts In Month" column ("2026-11").
+    /// TallySeam's own "Counts In Month" column ("2026-11").
     var countedMonth: Int?
     /// Running balance column. Read for reference only; it never changes an amount.
     var balance: Int?
@@ -221,7 +221,7 @@ struct CSVImportSource: Equatable, Sendable {
             m.category = find(["category"])
             m.notes = find(["notes", "note"], excluding: [m.description])
             m.type = find(["type"]).flatMap { (i: Int) -> Int? in
-                // Only MyMoney AI's own type values; a bank's "Type" column ("POS", "DD") is ignored.
+                // Only TallySeam's own type values; a bank's "Type" column ("POS", "DD") is ignored.
                 let values = samples(column: i).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
                 return !values.isEmpty && values.allSatisfy { CSVTransactionImporter.transactionType(from: $0) != nil } ? i : nil
             }

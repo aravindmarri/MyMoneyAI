@@ -23,9 +23,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.aravindmarri.mymoneyai
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: "MyMoney AI"
-        INFOPLIST_KEY_NSCameraUsageDescription: "MyMoney AI uses the camera to photograph receipts. Images stay on this iPhone."
-        INFOPLIST_KEY_NSFaceIDUsageDescription: "MyMoney AI uses Face ID to lock your financial data."
+        INFOPLIST_KEY_CFBundleDisplayName: "TallySeam"
+        INFOPLIST_KEY_NSCameraUsageDescription: "TallySeam uses the camera to photograph receipts. Images stay on this iPhone."
+        INFOPLIST_KEY_NSFaceIDUsageDescription: "TallySeam uses Face ID to lock your financial data."
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait

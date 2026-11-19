@@ -182,12 +182,12 @@ jobs:
           test -d "$APP"
           mkdir -p build/ipa/Payload
           cp -R "$APP" build/ipa/Payload/
-          (cd build/ipa && zip -qry ../MyMoneyAI-unsigned.ipa Payload)
-          ls -lh build/MyMoneyAI-unsigned.ipa
+          (cd build/ipa && zip -qry ../TallySeam-unsigned.ipa Payload)
+          ls -lh build/TallySeam-unsigned.ipa
           {
             echo "## Unsigned IPA"
             echo
-            echo "MyMoneyAI-unsigned.ipa is NOT signed and cannot be installed on an iPhone as-is."
+            echo "TallySeam-unsigned.ipa is NOT signed and cannot be installed on an iPhone as-is."
             echo "It must be re-signed with your own Apple Account (e.g. via Sideloadly or AltStore) before installing."
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -195,7 +195,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf build/verify && mkdir -p build/verify
-          unzip -q build/MyMoneyAI-unsigned.ipa -d build/verify
+          unzip -q build/TallySeam-unsigned.ipa -d build/verify
           APP=build/verify/Payload/MyMoneyAI.app
           test -f "$APP/MyMoneyAI" || { echo "::error::Payload/MyMoneyAI.app/MyMoneyAI missing"; exit 1; }
           BUNDLE_ID=$(plutil -extract CFBundleIdentifier raw "$APP/Info.plist")
@@ -222,8 +222,10 @@ jobs:
             echo "::error::App bundles third-party frameworks: $(ls "$APP/Frameworks" | xargs)"; FAIL=1
           fi
           [ "$FAIL" = 0 ] || exit 1
-          SIZE=$(stat -f%z build/MyMoneyAI-unsigned.ipa)
-          echo "::notice title=IPA verified::bundleId=$BUNDLE_ID, version=$VERSION ($BUILD), platform=$PLATFORM/$BUILD_PLATFORM, archs=$ARCHS, minOS=$MIN_OS, bytes=$SIZE"
+          DISPLAY=$(plutil -extract CFBundleDisplayName raw "$APP/Info.plist")
+          [ "$DISPLAY" = "TallySeam" ] || { echo "::error::Display name is $DISPLAY, expected TallySeam"; exit 1; }
+          SIZE=$(stat -f%z build/TallySeam-unsigned.ipa)
+          echo "::notice title=IPA verified::name=$DISPLAY, bundleId=$BUNDLE_ID, version=$VERSION ($BUILD), platform=$PLATFORM/$BUILD_PLATFORM, archs=$ARCHS, minOS=$MIN_OS, bytes=$SIZE"
           {
             echo "## IPA verification"
             echo
@@ -240,8 +242,8 @@ jobs:
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v6
         with:
-          name: MyMoneyAI-unsigned-ipa
-          path: build/MyMoneyAI-unsigned.ipa
+          name: TallySeam-unsigned-ipa
+          path: build/TallySeam-unsigned.ipa
           retention-days: 14
 
       - name: Upload archive log

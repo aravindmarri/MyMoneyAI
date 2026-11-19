@@ -45,7 +45,7 @@ struct PrivacyCoverView: View {
     var body: some View {
         ZStack {
             Color(.systemBackground).ignoresSafeArea()
-            Label("MyMoney AI", systemImage: "lock.shield.fill")
+            Label("TallySeam", systemImage: "lock.shield.fill")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
@@ -62,7 +62,7 @@ struct LockScreenView: View {
                 .font(.system(size: 56))
                 .foregroundStyle(.tint)
                 .accessibilityHidden(true)
-            Text("MyMoney AI is Locked").font(.title2.weight(.semibold))
+            Text("TallySeam is Locked").font(.title2.weight(.semibold))
             Button {
                 Task { await app.lock.unlock() }
             } label: {
