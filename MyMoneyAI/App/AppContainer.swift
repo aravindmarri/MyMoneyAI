@@ -19,6 +19,7 @@ final class AppContainer {
     let budgets: BudgetRepository
     let budgetCalculator: BudgetCalculationService
     let backup: BackupService
+    let statements: StatementRepository
     let lock: AppLockController
     let textRecognizer: any ReceiptTextRecognizing
     let categorySuggester: any CategorySuggesting
@@ -39,6 +40,7 @@ final class AppContainer {
         self.budgets = BudgetRepository(context: persistence.context)
         self.budgetCalculator = BudgetCalculationService(finance: finance)
         self.backup = BackupService(context: persistence.context, storage: receiptStorage)
+        self.statements = StatementRepository(context: persistence.context)
         let lockEnabled = (try? persistence.context.fetch(FetchDescriptor<AppSettings>()).first?.requireBiometricUnlock) ?? false
         self.lock = AppLockController(isEnabled: lockEnabled, authenticator: authenticator)
         self.textRecognizer = textRecognizer

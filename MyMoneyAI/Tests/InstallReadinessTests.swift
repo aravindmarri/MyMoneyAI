@@ -82,9 +82,13 @@ final class UpdateCompatibilityTests: XCTestCase {
         // If a model is added or changed, a new VersionedSchema and MigrationStage must be added,
         // otherwise existing users' stores would fail to open after an update.
         let latest = MyMoneyMigrationPlan.schemas.last.map { ObjectIdentifier($0) }
-        XCTAssertEqual(latest, ObjectIdentifier(MyMoneySchemaV2.self))
-        XCTAssertEqual(ObjectIdentifier(MyMoneyCurrentSchema.self), ObjectIdentifier(MyMoneySchemaV2.self))
+        XCTAssertEqual(latest, ObjectIdentifier(MyMoneySchemaV3.self))
+        XCTAssertEqual(ObjectIdentifier(MyMoneyCurrentSchema.self), ObjectIdentifier(MyMoneySchemaV3.self))
         let expected: Set<String> = ["MoneyTransaction", "SpendingCategory", "PaymentMethod", "Receipt", "RecurringBill", "Budget", "AppSettings"]
+        let expectedV3 = expected.union(["FinancialAccount", "ImportSession", "ImportedStatement", "StatementTransaction",
+                                         "ReconciliationMatch", "MerchantAlias"])
+        XCTAssertEqual(Set(MyMoneySchemaV3.models.map { String(describing: $0) }), expectedV3)
+        XCTAssertEqual(MyMoneySchemaV3.versionIdentifier, Schema.Version(3, 0, 0))
         XCTAssertEqual(Set(MyMoneySchemaV2.models.map { String(describing: $0) }), expected)
         XCTAssertEqual(Set(MyMoneySchemaV1.models.map { String(describing: $0) }), expected)
         XCTAssertEqual(MyMoneySchemaV1.versionIdentifier, Schema.Version(1, 0, 0))

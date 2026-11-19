@@ -21,6 +21,7 @@ struct ReceiptScannerView: View {
         NavigationStack {
             List {
                 ImportCenterSection(model: importCenter, currency: currency) { data in Task { await process(data) } }
+                SavedStatementsSection()
                 importSection
                 recentSection
             }

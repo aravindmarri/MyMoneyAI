@@ -58,12 +58,23 @@ enum MyMoneySchemaV2: VersionedSchema {
     }
 }
 
+/// 3.0.0: statement import and reconciliation. Adds new models only (no existing model changes),
+/// so 2.0.0 keeps referencing the live types and a lightweight stage adds the new tables.
+enum MyMoneySchemaV3: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
+    static var models: [any PersistentModel.Type] {
+        MyMoneySchemaV2.models + [FinancialAccount.self, ImportSession.self, ImportedStatement.self,
+                                  StatementTransaction.self, ReconciliationMatch.self, MerchantAlias.self]
+    }
+}
+
 /// The schema every container opens with.
-typealias MyMoneyCurrentSchema = MyMoneySchemaV2
+typealias MyMoneyCurrentSchema = MyMoneySchemaV3
 
 enum MyMoneyMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [MyMoneySchemaV1.self, MyMoneySchemaV2.self] }
+    static var schemas: [any VersionedSchema.Type] { [MyMoneySchemaV1.self, MyMoneySchemaV2.self, MyMoneySchemaV3.self] }
     static var stages: [MigrationStage] {
-        [.lightweight(fromVersion: MyMoneySchemaV1.self, toVersion: MyMoneySchemaV2.self)]
+        [.lightweight(fromVersion: MyMoneySchemaV1.self, toVersion: MyMoneySchemaV2.self),
+         .lightweight(fromVersion: MyMoneySchemaV2.self, toVersion: MyMoneySchemaV3.self)]
     }
 }

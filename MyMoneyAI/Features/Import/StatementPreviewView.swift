@@ -4,9 +4,14 @@ import SwiftData
 /// Check and correct what was read from a statement: document type, account, period, totals and
 /// every transaction line. Nothing here is saved to the database.
 struct StatementPreviewView: View {
+    @Environment(AppContainer.self) private var app
     @Binding var document: ImportedDocument
     @Query(filter: #Predicate<PaymentMethod> { $0.isActive }, sort: \PaymentMethod.name) private var accounts: [PaymentMethod]
     @State private var editingLine: StatementLineEditorRoute?
+    @State private var saveAccountId: UUID?
+    @State private var savedStatementId: UUID?
+    @State private var duplicateOf: ImportedStatement?
+    @State private var saveError: String?
 
     init(document: Binding<ImportedDocument>) { _document = document }
 
@@ -32,15 +37,22 @@ struct StatementPreviewView: View {
             if !p.parse.issues.isEmpty { issuesSection(p) }
             Section {
                 NavigationLink("View Extracted Text") { ExtractedTextView(text: p.text) }
-            } footer: {
-                Text("Nothing from this statement has been saved. Matching it against your transactions comes in the next update.")
             }
+            saveSection(p)
         }
         .navigationTitle(p.header.institution ?? "Statement")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: p.kind) { _, _ in reparse() }
         .onChange(of: p.header.periodEnd) { _, _ in reparse() }
         .onChange(of: p.header.currencyCode) { _, _ in reparse() }
+        .navigationDestination(item: $savedStatementId) { id in StatementDetailView(statementId: id) }
+        .onAppear {
+            duplicateOf = try? app.statements.duplicate(fingerprint: document.fingerprint)
+            if saveAccountId == nil { saveAccountId = matchingAccountId }
+        }
+        .alert("Can't Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(saveError ?? "") }
         .sheet(item: $editingLine) { route in
             StatementLineEditorView(route: route, currencyCode: p.header.currencyCode, isCard: p.kind == .creditCardStatement) { line in
                 apply(line, replacing: route)
@@ -98,10 +110,55 @@ struct StatementPreviewView: View {
 
     /// A payment method whose last four digits or name matches the statement, as a hint.
     private var matchingAccountName: String? {
+        matchingAccountId.flatMap { id in accounts.first { $0.id == id }?.name }
+    }
+
+    private var matchingAccountId: UUID? {
         let h = preview.wrappedValue.header
-        if let four = h.lastFour, let m = accounts.first(where: { $0.lastFourDigits == four }) { return m.name }
-        if let inst = h.institution?.lowercased(), let m = accounts.first(where: { $0.name.lowercased().contains(inst) }) { return m.name }
+        if let four = h.lastFour, let m = accounts.first(where: { $0.lastFourDigits == four }) { return m.id }
+        if let inst = h.institution?.lowercased(), let m = accounts.first(where: { $0.name.lowercased().contains(inst) }) { return m.id }
         return nil
+    }
+
+    @ViewBuilder
+    private func saveSection(_ p: StatementPreview) -> some View {
+        Section {
+            if let dup = duplicateOf {
+                Label("This exact file was already imported on \(dup.importedAt.formatted(date: .abbreviated, time: .omitted)).",
+                      systemImage: "doc.on.doc").foregroundStyle(.orange)
+                NavigationLink("Open the Saved Statement") { StatementDetailView(statementId: dup.id) }
+            } else {
+                Picker("Statement account", selection: $saveAccountId) {
+                    Text("Choose…").tag(UUID?.none)
+                    ForEach(accounts) { m in
+                        Text(m.lastFourDigits.map { "\(m.name) •••• \($0)" } ?? m.name).tag(Optional(m.id))
+                    }
+                }
+                Button("Save & Find Matches") { save(p) }
+                    .disabled(saveAccountId == nil || !p.kind.isStatement || p.parse.lines.isEmpty)
+            }
+        } header: {
+            Text("Match with your transactions")
+        } footer: {
+            if accounts.isEmpty {
+                Text("Add this bank account or card in Settings → Payment Methods first, so the statement can be linked to it.")
+            } else if !p.kind.isStatement {
+                Text("Choose “Bank statement” or “Credit card statement” as the document type to match it.")
+            } else {
+                Text("Saves the statement and suggests which of your transactions each line matches. Nothing in your transactions is changed.")
+            }
+        }
+    }
+
+    private func save(_ p: StatementPreview) {
+        do {
+            let s = try app.statements.saveStatement(p, filename: document.filename, fingerprint: document.fingerprint,
+                                                     paymentMethodId: saveAccountId, config: ReconciliationPreferences.config())
+            duplicateOf = s
+            savedStatementId = s.id
+        } catch {
+            saveError = error.localizedDescription
+        }
     }
 
     private var periodSection: some View {

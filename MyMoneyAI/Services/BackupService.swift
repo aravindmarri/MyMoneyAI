@@ -231,6 +231,12 @@ final class BackupService {
         try context.fetch(FetchDescriptor<PaymentMethod>()).forEach { context.delete($0) }
         try context.fetch(FetchDescriptor<SpendingCategory>()).forEach { context.delete($0) }
         try context.fetch(FetchDescriptor<AppSettings>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<ReconciliationMatch>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<StatementTransaction>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<ImportedStatement>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<ImportSession>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<FinancialAccount>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<MerchantAlias>()).forEach { context.delete($0) }
         try context.save()
         try storage.removeOrphans(referenced: [])
         DefaultCategories.makeAll().forEach { context.insert($0) }

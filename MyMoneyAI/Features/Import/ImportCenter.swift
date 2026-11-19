@@ -102,7 +102,7 @@ struct ImportCenterSection: View {
             } header: {
                 Text("Imported Files")
             } footer: {
-                Text("Statements are only previewed for now; nothing is saved until you choose to. Swipe to remove a file from this list.")
+                Text("Open a statement to check what was read, then save it to find matching transactions. Swipe to remove a file from this list.")
             }
             .sheet(item: $csvRequest) { request in
                 CSVImportView(table: request.table) { message in resultMessage = message }
