@@ -1,24 +1,24 @@
 # Build Status
 
-_Last updated: 2026-11-19 (CI run #28)_
+_Last updated: 2026-11-19 (CI run #30)_
 
 Development happens on Windows. iOS builds and tests run on GitHub Actions (`.github/workflows/ios-build.yml`, `macos-15` runner, XcodeGen).
 
-## Summary (CI run #28, commit `fd46f5c`)
+## Summary (CI run #30, commit `0412770`)
 
 | Check | Result |
 |---|---|
 | iOS Simulator compile | **Pass** (GitHub Actions) |
-| Automated tests | **Pass: 205 of 205** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
-| Unsigned device archive | **Pass.** `MyMoneyAI-unsigned-ipa` artifact (1,299,590 bytes, kept for 14 days) |
-| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.mymoneyai`, version 1.0 (28), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
+| Automated tests | **Pass: 216 of 216** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
+| Unsigned device archive | **Pass.** `MyMoneyAI-unsigned-ipa` artifact (1,454,896 bytes, kept for 14 days) |
+| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.mymoneyai`, version 1.0 (30), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
 | Network-use checks | **Pass.** Static source scan, linked-framework check on the IPA, and a runtime test showing OCR, calculations and backups make no requests |
 | Run on a real iPhone | **Not done.** Install with Sideloadly and a free Apple Account: see README → INSTALL_ON_IPHONE |
 | Manual UI check (layout, VoiceOver, Dynamic Type, dark mode) | **Not done** |
 | Airplane-mode check on a device | **Not done.** The code makes no network calls, and Vision OCR ran offline in the simulator test |
-| Static source checks (`python tools/check_sources.py`) | **Pass:** 85 Swift files |
+| Static source checks (`python tools/check_sources.py`) | **Pass:** 88 Swift files |
 
-Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44612012216
+Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44615699623
 
 ### CI history
 
@@ -37,6 +37,7 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44612012216
 | #13 | `bd249b2` | Fail | A new test expression was too slow to type-check. IPA job passed and the IPA was verified |
 | #14 | `e75e5ae` | **Pass** | 132 of 132 tests (Phases 1–6 and install readiness); IPA verified |
 | #16 | `d24c455` | **Pass** | 153 of 153 tests (Phase 7: CSV import and export); IPA verified |
+| #30 | `0412770` | **Pass** | 216 of 216 tests (statement import Phase C), first try; IPA verified |
 | #24 | `6de2d28` | Fail | Phase B: 201 of 202; one test crashed and wasn't named (annotation gap). IPA job passed |
 | #25 | `4abf04a` | Fail | Annotator now reports crashes: "unexpected exit" in a migration test |
 | #26 | `7f77666` | Fail | CI now publishes failing test names: `SchemaV3MigrationTests` crashed with a trap |
@@ -102,6 +103,14 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44612012216
 - Every row is previewed as new, already in the app, or unreadable (with the reason). A row is "already in the app" when a transaction on the same day has the same type, amount and a matching description; each existing transaction matches only one row. Re-importing the same file adds nothing
 - Categories come from a category column by name and type, otherwise from the existing suggestion engine. The statement's account and currency apply to every row. All rows are saved together or not at all
 
+**Statement import Phase C** (run #30): see docs/STATEMENT_IMPORT.md
+- Line review side by side with differences highlighted: confirm, reject (next candidate promoted), choose another, add as new (category suggestion, account, transfer accounts), add as card payment or transfer, skip, review later; undo for every action
+- Amounts change only when the user chooses the statement amount (old amount kept for undo); dates never change; new transactions use the statement's transaction date
+- Bulk confirm of strong, unambiguous, exact-amount matches after a preview (all or nothing)
+- Transfer pairing across accounts: the bank's card payment and the card's payment credit back one transfer; tested end to end (spending stays $100)
+- Overlapping-statement duplicates, identical lines within a statement, app transactions missing from the statement
+- Undo a whole import: deletes only the transactions it added, restores amounts, releases matches
+
 **Statement import Phase B** (run #28): see docs/STATEMENT_IMPORT.md
 - Schema 3.0.0 adds FinancialAccount, ImportSession, ImportedStatement, StatementTransaction, ReconciliationMatch, MerchantAlias (new tables only). The 2.0.0 → 3.0.0 upgrade is tested on a real store: write 2.0.0, upgrade, keep data, add new data, reopen
 - Matching: hard currency and direction rules; score from amount 45, merchant 25, date 15, account 15; calendar-day windows (default ±2); never strong on amount and date alone; one transaction per line; ties shown; card repayments match transfers only
@@ -126,7 +135,7 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44612012216
 - Stable bundle ID `io.github.aravindmarri.mymoneyai`, so a re-signed build installs over the previous one and keeps its data. The build number is the CI run number
 - CI unzips the IPA and fails unless it is the real arm64 iPhone device build
 
-## Tests (205, all passing in CI run #28)
+## Tests (216, all passing in CI run #30)
 
 | File | Count | Covers |
 |---|---|---|
@@ -144,9 +153,10 @@ Run: https://github.com/aravindmarri/MyMoneyAI/actions/runs/44612012216
 | `CountedMonthAndAccountsTests.swift` | 12 | Early salary in the next month's totals; reporting dates across month and year ends; budgets and daily spending; draft save, edit and duplicate; backup and CSV keep the month; schema 1.0.0 store upgrades with nothing lost; account setup names, de-duplication, last-four validation, creating Cash, Wells Fargo, Capital One and Amex |
 | `StatementImportTests.swift` | 17 | Format detection; fingerprints; searchable multi-page PDF; scanned PDF through OCR; password-protected PDF (none, wrong, right); invalid files; routing of CSV, image, OFX, locked PDF and statement PDF; classification of bank, card, receipt, invoice, payment confirmation, unknown; bank and card header extraction; bank and card transaction lines (wrapped lines, balances, posting dates, kinds, issues kept); year across December/January; signs, CR/DR, pending, impossible dates; money tokens and last four; re-parse keeps edited lines; CSV balance and pending columns; remembered mappings |
 | `ReconciliationTests.swift` | 23 | Merchant normalization (Walmart spellings, prefixes, store numbers, locations, Amazon, learned aliases) and similarity; Walmart posted 2 days later; date differences both ways, windows, weekend delay, posting dates; calendar days across month, year and DST; currency and direction rules; card repayment matches only the transfer and totals stay $100; tip differences; identical purchases one-to-one; ties shown; confirmed transactions skipped; repository save, duplicate file, wrong type, account reuse, re-run with a narrower window, undo import, delete all; learned aliases stored once; window preference; 2.0.0 store written, upgraded and extended |
+| `StatementReviewTests.swift` | 11 | Confirm learns an alias and undo restores; statement amount only on request, restored by undo, dates unchanged; reject promotes the next candidate and stays rejected after re-matching; currency, direction and already-matched rules; adding a missing purchase (transaction date, category, account, notes) and undo deleting it; skip and undo; bulk confirm only strong and all-or-nothing; the $100 card repayment across two statements (one transfer, spending $100, one line per account, undo releases the other side); overlapping statements and identical lines; transactions missing from the statement; incomplete when lines couldn't be read |
 | `ReceiptStorageTests.swift` | 8 | File save, load and delete; path-traversal rejection; orphan cleanup; linking receipts to new or existing transactions; failed saves write nothing; receipts aren't counted as spending |
 
-Xcode counts parameterized cases separately, which is why the total is 205. All tests use synthetic data only.
+Xcode counts parameterized cases separately, which is why the total is 216. All tests use synthetic data only.
 
 ## Known issues and risks
 

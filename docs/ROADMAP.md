@@ -12,6 +12,6 @@
 | 7. CSV import & export | Bank statement import with column mapping, preview and duplicate skipping; transaction export for spreadsheets | **Done:** CI build and tests passing |
 
 | 7b. Counts in month & account setup | Count a transaction in another month (early salary); schema 2.0.0 migration; quick setup of cash and cards | **Done:** CI build and tests passing |
-| 8. Statement import & reconciliation | Phases A–E: see docs/STATEMENT_IMPORT.md | **Phases A and B done** (run #28); C–E pending |
+| 8. Statement import & reconciliation | Phases A–E: see docs/STATEMENT_IMPORT.md | **Phases A, B and C done** (run #30); D–E pending |
 
-**Status:** Phases 1–7b compile and pass 205 automated tests on GitHub Actions (run #28). Manual on-device testing is still pending.
+**Status:** Phases 1–7b compile and pass 216 automated tests on GitHub Actions (run #30). Manual on-device testing is still pending.

@@ -47,7 +47,7 @@ marked **Done** as each phase passes CI.
   wider windows lower confidence and say why. Strong / possible / weak / no match. Ties show every candidate.
   One existing transaction can back only one statement line. Posting dates never overwrite purchase dates.
 
-### Phase C: review, duplicates, transfers
+### Phase C: review, duplicates, transfers (**Done**: CI run #30)
 - Side-by-side match review; confirm, reject, pick another, create new, mark transfer or card repayment, skip, later.
 - Bulk confirm for strong, unambiguous matches after a preview. All-or-nothing saves; undo of a whole import.
 - Duplicate document (fingerprint + account + period), duplicate transaction, potential duplicate, and legitimate
