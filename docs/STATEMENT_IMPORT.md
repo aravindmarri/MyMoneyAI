@@ -39,7 +39,7 @@ marked **Done** as each phase passes CI.
 - SHA-256 fingerprint of every file (used for duplicate-document detection in Phase B).
 - Nothing is saved to the database in Phase A. Source files are read into memory from the security-scoped URL and not copied.
 
-### Phase B: models, migration, matching
+### Phase B: models, migration, matching (**Done**: CI run #28)
 - Schema V3: `FinancialAccount` (mapped from payment methods), `ImportSession`, `ImportedStatement`,
   `StatementTransaction`, `ReconciliationMatch`, `MerchantAlias`. Lightweight migration, tested on a real V2 store.
 - `StatementReconciliationService`: hard constraints (currency, direction), then an explainable score: amount 45%,
