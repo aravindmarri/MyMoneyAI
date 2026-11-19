@@ -57,6 +57,21 @@ final class StatementRepository {
         Dictionary(try context.fetch(FetchDescriptor<MerchantAlias>()).map { ($0.aliasKey, $0.merchantKey) }, uniquingKeysWith: { a, _ in a })
     }
 
+    /// Remembers that a statement spelling means a merchant. One row per spelling: a repeat
+    /// confirmation updates the existing row instead of adding another.
+    func learnAlias(statementDescription: String, merchant: String) throws {
+        let key = StatementMerchantNormalizer.normalize(statementDescription)
+        let target = StatementMerchantNormalizer.normalize(merchant)
+        guard !key.isEmpty, !target.isEmpty, key != target else { return }
+        if let existing = try context.fetch(FetchDescriptor<MerchantAlias>(predicate: #Predicate { $0.aliasKey == key })).first {
+            existing.merchantKey = target
+            existing.confirmations += 1
+        } else {
+            context.insert(MerchantAlias(aliasKey: key, merchantKey: target))
+        }
+        try context.save()
+    }
+
     /// Transactions already confirmed against some statement line; they can't back another line.
     func alreadyMatchedTransactionIds(excludingStatement: UUID? = nil) throws -> Set<UUID> {
         Set(try context.fetch(FetchDescriptor<StatementTransaction>())

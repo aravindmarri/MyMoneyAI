@@ -238,14 +238,16 @@ final class ReconciliationMatch {
 
 /// A statement spelling the user confirmed for a merchant, e.g. "wm supercenter" → "walmart".
 /// Learned on the device from confirmed matches (Phase C).
+/// One row per `aliasKey` (kept unique by `StatementRepository.learnAlias`).
 @Model
 final class MerchantAlias {
-    @Attribute(.unique) var aliasKey: String
+    @Attribute(.unique) var id: UUID
+    var aliasKey: String
     var merchantKey: String
     var confirmations: Int
     var createdAt: Date
 
-    init(aliasKey: String, merchantKey: String, createdAt: Date = .now) {
-        self.aliasKey = aliasKey; self.merchantKey = merchantKey; self.confirmations = 1; self.createdAt = createdAt
+    init(id: UUID = UUID(), aliasKey: String, merchantKey: String, createdAt: Date = .now) {
+        self.id = id; self.aliasKey = aliasKey; self.merchantKey = merchantKey; self.confirmations = 1; self.createdAt = createdAt
     }
 }

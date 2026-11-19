@@ -286,6 +286,14 @@ final class StatementRepositoryTests: XCTestCase {
         }
     }
 
+    func testLearnedAliasIsStoredOncePerSpelling() throws {
+        try repo.learnAlias(statementDescription: "ACME HOLDINGS 4411", merchant: "Corner Gym")
+        try repo.learnAlias(statementDescription: "ACME HOLDINGS 9", merchant: "Corner Gym")
+        XCTAssertEqual(try persistence.context.fetchCount(FetchDescriptor<MerchantAlias>()), 1)
+        XCTAssertEqual(try repo.learnedAliases(), ["acme holdings": "corner gym"])
+        XCTAssertEqual(try persistence.context.fetch(FetchDescriptor<MerchantAlias>()).first?.confirmations, 2)
+    }
+
     func testWindowPreference() throws {
         let suite = "ReconciliationPrefs-\(UUID().uuidString)"
         let d = try XCTUnwrap(UserDefaults(suiteName: suite))
@@ -340,11 +348,10 @@ final class SchemaV3MigrationTests: XCTestCase {
 
     func testC_UpgradedStoreAcceptsNewData() throws {
         try writeVersion2Store()
-        do {
-            let updated = try PersistenceService(storeURL: url)
-            updated.context.insert(MerchantAlias(aliasKey: "wm supercenter", merchantKey: "walmart"))
-            try updated.context.save()
-        }
-        XCTAssertEqual(try PersistenceService(storeURL: url).context.fetchCount(FetchDescriptor<MerchantAlias>()), 1)
+        let updated = try PersistenceService(storeURL: url)
+        updated.context.insert(MerchantAlias(aliasKey: "wm supercenter", merchantKey: "walmart"))
+        try updated.context.save()
+        let reopened = try PersistenceService(storeURL: url)
+        XCTAssertEqual(try reopened.context.fetchCount(FetchDescriptor<MerchantAlias>()), 1)
     }
 }
