@@ -485,7 +485,7 @@ extension StatementRepository {
     }
 
     /// "blue bottle" → "Blue Bottle".
-    static func displayName(forMerchantKey key: String) -> String {
+    nonisolated static func displayName(forMerchantKey key: String) -> String {
         key.split(separator: " ").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
     }
 
