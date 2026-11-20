@@ -9,6 +9,7 @@ struct DashboardView: View {
     @Query private var budgets: [Budget]
     @Query private var settings: [AppSettings]
     @Query private var paymentMethods: [PaymentMethod]
+    @Query private var statementLines: [StatementTransaction]
     @State private var showAccountSetup = false
     @State private var model = DashboardViewModel()
     @State private var editorRoute: TransactionEditorRoute?
@@ -34,6 +35,7 @@ struct DashboardView: View {
                     }
                     quickActions
                     if paymentMethods.isEmpty { accountSetupPrompt }
+                    if !statementLines.isEmpty { verifiedSpendingCard(records) }
                     spendingSection(records: records, categories: categories)
                     cashFlowSection(records: records)
                     budgetsSection(records: records, categoryByID: categoryByID)
@@ -78,6 +80,22 @@ struct DashboardView: View {
                         systemImage: "equal.circle.fill", tint: Theme.net)
             SummaryCard(title: "Spent of Income", value: ratio, systemImage: "percent", tint: .orange)
         }
+    }
+
+    private func verifiedSpendingCard(_ records: [TransactionRecord]) -> some View {
+        let verified = Set(statementLines.filter { $0.status == .matched || $0.status == .created }.compactMap(\.matchedTransactionId))
+        let c = ReconciliationSummaryService.coverage(records: records, verifiedIds: verified, range: model.range,
+                                                      currencyCode: currency, calendar: app.finance.calendar)
+        return NavigationLink { ReconciliationOverviewView() } label: {
+            HStack {
+                Label("\(c.percentVerified)% of this month's spending verified", systemImage: "checkmark.seal")
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+        }
+        .buttonStyle(.plain)
     }
 
     private var accountSetupPrompt: some View {

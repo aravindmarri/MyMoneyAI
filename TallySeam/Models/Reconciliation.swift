@@ -172,6 +172,8 @@ final class StatementTransaction {
     var confidenceRaw: Int
     var isPending: Bool
     var wasEditedByUser: Bool
+    /// The account balance printed after this line, if the statement shows one.
+    var runningBalance: Int64?
     var statusRaw: String
     var matchedTransactionId: UUID?
 
@@ -181,6 +183,7 @@ final class StatementTransaction {
         self.amountMinorUnits = line.amountMinorUnits; self.currencyCode = currencyCode; self.directionRaw = line.direction.rawValue
         self.kindRaw = line.kind.rawValue; self.sourcePage = line.page; self.sourceLine = line.line
         self.confidenceRaw = line.confidence.rawValue; self.isPending = line.isPending; self.wasEditedByUser = line.isEdited
+        self.runningBalance = line.runningBalance
         self.statusRaw = StatementLineStatus.unmatched.rawValue
     }
 

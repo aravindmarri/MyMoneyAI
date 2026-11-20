@@ -453,6 +453,31 @@ extension StatementRepository {
         try deleteImport(statementId: statementId)
     }
 
+    // MARK: Balance
+
+    func balanceInput(_ s: ImportedStatement, lines: [StatementTransaction]) -> StatementBalanceInput {
+        StatementBalanceInput(
+            isCreditCard: s.documentKind == .creditCardStatement, currencyCode: s.currencyCode,
+            openingBalance: s.openingBalance, closingBalance: s.closingBalance, totalDeposits: s.totalDeposits,
+            totalWithdrawals: s.totalWithdrawals, totalPaymentsAndCredits: s.totalPaymentsAndCredits, totalPurchases: s.totalPurchases,
+            totalFees: s.totalFees, totalInterest: s.totalInterest,
+            lines: lines.map { StatementBalanceInput.Line(amountMinorUnits: $0.amountMinorUnits, direction: $0.direction,
+                                                          runningBalance: $0.runningBalance, page: $0.sourcePage, line: $0.sourceLine,
+                                                          isPending: $0.isPending) },
+            unreadLineCount: s.unreadLineCount)
+    }
+
+    func balanceReport(statementId: UUID) throws -> StatementBalanceReport {
+        guard let s = try fetchStatement(id: statementId) else { throw StatementImportError.notFound }
+        return StatementBalanceValidator.validate(balanceInput(s, lines: try fetchLines(statementId: statementId)))
+    }
+
+    /// Transactions backed by a confirmed or created statement line.
+    func verifiedTransactionIds() throws -> Set<UUID> {
+        Set(try context.fetch(FetchDescriptor<StatementTransaction>())
+            .filter { $0.status == .matched || $0.status == .created }.compactMap(\.matchedTransactionId))
+    }
+
     // MARK: Helpers
 
     private static func lineKey(_ l: StatementTransaction, _ calendar: Calendar) -> String {
@@ -499,7 +524,9 @@ extension StatementRepository {
         guard let s = try fetchStatement(id: statementId) else { return }
         let lines = try fetchLines(statementId: statementId)
         let open = lines.contains { $0.status == .unmatched || $0.status == .suggested }
-        s.reconciliationStatus = open ? .inProgress : (s.unreadLineCount > 0 ? .incomplete : .reconciled)
+        // Reconciled only when every line is reviewed AND the balance is proven; otherwise incomplete.
+        let verdict = StatementBalanceValidator.validate(balanceInput(s, lines: lines)).verdict
+        s.reconciliationStatus = open ? .inProgress : (verdict == .verified ? .reconciled : .incomplete)
         if let session = try context.fetch(FetchDescriptor<ImportSession>()).first(where: { $0.id == s.sessionId }) {
             session.status = open ? .reviewing : .completed
             session.finishedAt = open ? nil : .now

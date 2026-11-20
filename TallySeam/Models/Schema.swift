@@ -64,17 +64,63 @@ enum TallySeamSchemaV3: VersionedSchema {
     static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
     static var models: [any PersistentModel.Type] {
         TallySeamSchemaV2.models + [FinancialAccount.self, ImportSession.self, ImportedStatement.self,
-                                  StatementTransaction.self, ReconciliationMatch.self, MerchantAlias.self]
+                                    TallySeamSchemaV3.StatementTransaction.self, ReconciliationMatch.self, MerchantAlias.self]
+    }
+
+    /// StatementTransaction exactly as shipped in schema 3.0.0 (builds 1.0 (28)–(33)). Frozen.
+    @Model
+    final class StatementTransaction {
+        @Attribute(.unique) var id: UUID
+        var statementId: UUID
+        var transactionDate: Date
+        var postingDate: Date?
+        var originalDescription: String
+        var normalizedMerchant: String
+        var amountMinorUnits: Int64
+        var currencyCode: String
+        var directionRaw: String
+        var kindRaw: String
+        var referenceNumber: String?
+        var sourcePage: Int
+        var sourceLine: Int
+        var confidenceRaw: Int
+        var isPending: Bool
+        var wasEditedByUser: Bool
+        var statusRaw: String
+        var matchedTransactionId: UUID?
+
+        init(id: UUID, statementId: UUID, transactionDate: Date, description: String, amountMinorUnits: Int64, currencyCode: String,
+             directionRaw: String) {
+            self.id = id; self.statementId = statementId; self.transactionDate = transactionDate
+            self.originalDescription = description; self.normalizedMerchant = description.lowercased()
+            self.amountMinorUnits = amountMinorUnits; self.currencyCode = currencyCode; self.directionRaw = directionRaw
+            self.kindRaw = StatementLineKind.unknown.rawValue; self.sourcePage = 1; self.sourceLine = 1
+            self.confidenceRaw = 2; self.isPending = false; self.wasEditedByUser = false
+            self.statusRaw = StatementLineStatus.unmatched.rawValue
+        }
+    }
+}
+
+/// 4.0.0: StatementTransaction gains the optional `runningBalance` printed on bank statements, used
+/// to find the exact line where a balance stops adding up.
+enum TallySeamSchemaV4: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(4, 0, 0) }
+    static var models: [any PersistentModel.Type] {
+        TallySeamSchemaV2.models + [FinancialAccount.self, ImportSession.self, ImportedStatement.self,
+                                    StatementTransaction.self, ReconciliationMatch.self, MerchantAlias.self]
     }
 }
 
 /// The schema every container opens with.
-typealias TallySeamCurrentSchema = TallySeamSchemaV3
+typealias TallySeamCurrentSchema = TallySeamSchemaV4
 
 enum TallySeamMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [TallySeamSchemaV1.self, TallySeamSchemaV2.self, TallySeamSchemaV3.self] }
+    static var schemas: [any VersionedSchema.Type] {
+        [TallySeamSchemaV1.self, TallySeamSchemaV2.self, TallySeamSchemaV3.self, TallySeamSchemaV4.self]
+    }
     static var stages: [MigrationStage] {
         [.lightweight(fromVersion: TallySeamSchemaV1.self, toVersion: TallySeamSchemaV2.self),
-         .lightweight(fromVersion: TallySeamSchemaV2.self, toVersion: TallySeamSchemaV3.self)]
+         .lightweight(fromVersion: TallySeamSchemaV2.self, toVersion: TallySeamSchemaV3.self),
+         .lightweight(fromVersion: TallySeamSchemaV3.self, toVersion: TallySeamSchemaV4.self)]
     }
 }

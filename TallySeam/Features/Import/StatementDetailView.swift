@@ -80,6 +80,8 @@ struct StatementDetailView: View {
         if let statement {
             List {
                 progressSection(statement)
+                StatementBalanceSection(report: StatementBalanceValidator.validate(app.statements.balanceInput(statement, lines: lines)),
+                                        currencyCode: statement.currencyCode)
                 summarySection(statement)
                 matchingSection
                 if !duplicates.isEmpty || !identicalGroups.isEmpty { duplicatesSection }
@@ -142,9 +144,9 @@ struct StatementDetailView: View {
             }
             switch s.reconciliationStatus {
             case .reconciled:
-                Label("Every line is reviewed", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                Label("Reconciled: every line reviewed and the balance verified", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
             case .incomplete:
-                Label("Every read line is reviewed, but \(s.unreadLineCount) line(s) couldn't be read from the file", systemImage: "exclamationmark.triangle")
+                Label("Every line is reviewed, but the balance isn't proven yet. See the balance check.", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
             default:
                 EmptyView()
@@ -152,7 +154,7 @@ struct StatementDetailView: View {
         } header: {
             Text("Review")
         } footer: {
-            Text("Balance checks against the statement totals come in the next update, so a reviewed statement isn't yet a proven balance.")
+            Text("A statement is reconciled only when every line is reviewed and its balance adds up.")
         }
     }
 
@@ -354,6 +356,9 @@ struct SavedStatementsSection: View {
     var body: some View {
         if !statements.isEmpty {
             Section("Saved Statements") {
+                NavigationLink { ReconciliationOverviewView() } label: {
+                    Label("Reconciliation Overview", systemImage: "checklist")
+                }
                 ForEach(statements.prefix(20)) { s in
                     NavigationLink {
                         StatementDetailView(statementId: s.id)

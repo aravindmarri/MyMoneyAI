@@ -48,8 +48,10 @@ final class StatementReviewTests: XCTestCase {
 
     /// A July card statement for the Chase card with the given purchase and payment lines.
     @discardableResult
-    private func saveCard(purchases: [String], payments: [String] = [], fingerprint: String = UUID().uuidString) throws -> ImportedStatement {
-        let text = ["Chase", "Card ending in 1111", "Opening/Closing Date 07/01/2026 - 07/31/2026", "New Balance $0.00", "Purchases"]
+    private func saveCard(purchases: [String], payments: [String] = [], newBalance: String = "$0.00",
+                          fingerprint: String = UUID().uuidString) throws -> ImportedStatement {
+        let text = ["Chase", "Card ending in 1111", "Opening/Closing Date 07/01/2026 - 07/31/2026", "Previous Balance $0.00",
+                    "New Balance \(newBalance)", "Purchases"]
             + purchases + (payments.isEmpty ? [] : ["Payments and Credits"] + payments)
         let p = preview(text)
         XCTAssertEqual(p.kind, .creditCardStatement)
@@ -82,7 +84,7 @@ final class StatementReviewTests: XCTestCase {
 
     func testConfirmLearnsAliasAndUndoRestores() throws {
         let gym = try addTransaction(3_000, "Corner Gym", day(7, 8), pm: chase.id)
-        let s = try saveCard(purchases: ["07/08 ACME HOLDINGS 30.00"])
+        let s = try saveCard(purchases: ["07/08 ACME HOLDINGS 30.00"], newBalance: "$30.00")
         let l = try line(s, "ACME")
         XCTAssertEqual(l.status, .suggested)
         try repo.confirm(lineId: l.id, transactionId: gym.id)
