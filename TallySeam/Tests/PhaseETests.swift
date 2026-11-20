@@ -171,15 +171,21 @@ final class MatchingPerformanceTests: XCTestCase {
         cal.timeZone = TimeZone(identifier: "UTC")!
         let start = cal.date(from: DateComponents(year: 2026, month: 1, day: 1, hour: 12))!
         let merchants = ["Walmart", "Starbucks", "Shell", "Target", "Amazon", "Corner Market", "Joes Diner", "Netflix"]
-        let history = (0..<3_000).map { i in
-            TransactionRecord(transactionDate: cal.date(byAdding: .hour, value: i * 3, to: start)!, amountMinorUnits: Int64(500 + (i * 37) % 9_000),
-                              merchant: merchants[i % merchants.count], title: merchants[i % merchants.count], transactionType: .expense)
+        var history: [TransactionRecord] = []
+        for i in 0..<3_000 {
+            let date = cal.date(byAdding: .hour, value: i * 3, to: start)!
+            let amount = Int64(500 + (i * 37) % 9_000)
+            let merchant = merchants[i % merchants.count]
+            history.append(TransactionRecord(transactionDate: date, amountMinorUnits: amount, merchant: merchant, title: merchant,
+                                             transactionType: .expense))
         }
-        let lines = (0..<1_000).map { i -> StatementLineInput in
+        var lines: [StatementLineInput] = []
+        for i in 0..<1_000 {
             let t = history[i * 3]
-            return StatementLineInput(id: UUID(), transactionDate: cal.date(byAdding: .day, value: 1, to: t.transactionDate)!, postingDate: nil,
-                                      description: (t.merchant ?? "").uppercased() + " #\(i)", amountMinorUnits: t.amountMinorUnits,
-                                      currencyCode: "USD", direction: .moneyOut, kind: .purchase)
+            let date = cal.date(byAdding: .day, value: 1, to: t.transactionDate)!
+            let description = (t.merchant ?? "").uppercased() + " #" + String(i)
+            lines.append(StatementLineInput(id: UUID(), transactionDate: date, postingDate: nil, description: description,
+                                            amountMinorUnits: t.amountMinorUnits, currencyCode: "USD", direction: .moneyOut, kind: .purchase))
         }
         let service = StatementReconciliationService(calendar: cal)
         let began = Date()
@@ -187,7 +193,8 @@ final class MatchingPerformanceTests: XCTestCase {
                                         account: ReconciliationAccount(paymentMethodId: nil, isCreditCard: true, displayName: "Card"))
         let seconds = Date().timeIntervalSince(began)
         XCTAssertEqual(results.count, 1_000)
-        XCTAssertGreaterThan(results.compactMap(\.suggestion).count, 900, "nearly every line finds its transaction")
+        let suggested = results.filter { (r: LineReconciliation) -> Bool in r.suggestion != nil }.count
+        XCTAssertGreaterThan(suggested, 900, "nearly every line finds its transaction")
         XCTAssertLessThan(seconds, 15, "1,000 lines against 3,000 transactions took \(seconds)s")
     }
 }
