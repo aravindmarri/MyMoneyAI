@@ -19,6 +19,7 @@ struct SettingsView: View {
                 if let s = settings.first {
                     SecuritySection(settings: s)
                 }
+                SmartSuggestionsSection()
                 Section("Data") {
                     NavigationLink { DataManagementView() } label: { Label("Backup & Data", systemImage: "externaldrive") }
                 }
@@ -44,6 +45,24 @@ private struct PreferencesSection: View {
                                                     set: { settings.preferredAppearance = $0 })) {
                 ForEach(AppearancePreference.allCases) { Text($0.displayName).tag($0) }
             }
+        }
+    }
+}
+
+/// Optional Apple Intelligence for statement suggestions. Off by default; the built-in rules always work.
+private struct SmartSuggestionsSection: View {
+    @AppStorage(DescriptionAssistantFactory.preferenceKey) private var useOnDeviceModel = false
+
+    var body: some View {
+        Section {
+            Toggle(isOn: $useOnDeviceModel) { Label("Use Apple Intelligence", systemImage: "sparkles") }
+                .disabled(!DescriptionAssistantFactory.isOnDeviceModelAvailable)
+        } header: {
+            Text("Smart Suggestions")
+        } footer: {
+            Text(DescriptionAssistantFactory.isOnDeviceModelAvailable
+                 ? "Helps explain unusual statement descriptions and suggest merchant names, on this iPhone only. It never changes amounts or saves anything by itself."
+                 : "Apple Intelligence isn't available on this iPhone, so TallySeam's built-in rules are used. They work fully offline.")
         }
     }
 }

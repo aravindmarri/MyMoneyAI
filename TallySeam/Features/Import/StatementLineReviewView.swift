@@ -262,9 +262,31 @@ struct NewTransactionFromLineView: View {
     @Query(filter: #Predicate<PaymentMethod> { $0.isActive }, sort: \PaymentMethod.name) private var methods: [PaymentMethod]
     @State private var decision: NewTransactionDecision?
     @State private var message: String?
+    @State private var insight: DescriptionInsight?
 
     var body: some View {
         Form {
+            if let insight, let binding = Binding($decision) {
+                Section {
+                    Text(insight.explanation).font(.subheadline)
+                    if binding.wrappedValue.type != .transfer, insight.merchantName != (binding.wrappedValue.merchant ?? "") {
+                        Button("Use the name “\(insight.merchantName)”") {
+                            binding.wrappedValue.merchant = insight.merchantName
+                            binding.wrappedValue.title = insight.merchantName
+                        }
+                    }
+                    if let name = insight.categoryName, let kind = binding.wrappedValue.type.categoryKind,
+                       let c = categories.first(where: { $0.kind == kind && $0.name == name }), binding.wrappedValue.categoryId != c.id {
+                        Button("Use the category “\(name)”") { binding.wrappedValue.categoryId = c.id }
+                    }
+                } header: {
+                    Text("Suggestion")
+                } footer: {
+                    Text(insight.source == .onDeviceModel
+                         ? "From Apple Intelligence on this iPhone. Nothing is sent anywhere. Check it before using it."
+                         : "From TallySeam's built-in rules, on this iPhone.")
+                }
+            }
             if let binding = Binding($decision) {
                 Section {
                     Picker("Type", selection: binding.type) {
@@ -310,7 +332,10 @@ struct NewTransactionFromLineView: View {
             }
         }
         .navigationTitle(forceTransfer ? "Add Transfer" : "Add Transaction")
-        .task { load() }
+        .task {
+            load()
+            await loadInsight()
+        }
         .alert("Can't Add", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(message ?? "") }
@@ -331,6 +356,13 @@ struct NewTransactionFromLineView: View {
             }
             decision = d
         } catch { message = error.localizedDescription }
+    }
+
+    private func loadInsight() async {
+        guard insight == nil, let line = try? app.statements.fetchLine(id: lineId) else { return }
+        let description = line.originalDescription, kind = line.kind
+        let names = categories.filter { $0.kind == .expense }.map(\.name)
+        insight = await DescriptionAssistantFactory.make().insight(for: description, kind: kind, categoryNames: names)
     }
 
     private func save() {

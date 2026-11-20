@@ -190,6 +190,27 @@ final class StatementRepository {
         }
     }
 
+    // MARK: Privacy
+
+    /// Deletes every imported statement with its lines, suggestions and sessions. Transactions are
+    /// kept (including ones added from statements); they simply become unverified. Learned merchant
+    /// spellings and accounts are kept too.
+    @discardableResult
+    func deleteAllStatementData() throws -> Int {
+        let count = try context.fetchCount(FetchDescriptor<ImportedStatement>())
+        do {
+            try context.fetch(FetchDescriptor<ReconciliationMatch>()).forEach { context.delete($0) }
+            try context.fetch(FetchDescriptor<StatementTransaction>()).forEach { context.delete($0) }
+            try context.fetch(FetchDescriptor<ImportedStatement>()).forEach { context.delete($0) }
+            try context.fetch(FetchDescriptor<ImportSession>()).forEach { context.delete($0) }
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+        return count
+    }
+
     // MARK: Undo
 
     /// Removes an imported statement with its lines, suggestions and session. Transactions in the

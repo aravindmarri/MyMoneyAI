@@ -36,6 +36,8 @@ struct BackupPayload: Codable, Equatable, Sendable {
     var receipts: [ReceiptItem] = []
     var bills: [BillItem] = []
     var budgets: [BudgetItem] = []
+    /// Statement import data. Absent in backups made before statement import.
+    var reconciliation: BackupReconciliationData?
 
     /// Rejects data the app could never have produced. Nothing is imported if this fails.
     func validate() throws {
@@ -64,6 +66,9 @@ struct ImportSummary: Equatable, Sendable {
     var budgetsAdded = 0
     /// Budgets imported as paused because an active budget for the same category and currency already exists.
     var budgetsPaused = 0
+    var statementsAdded = 0
+    /// Statements already on the device (same id or same file).
+    var statementsSkipped = 0
 }
 
 /// Builds and restores backups, deletes all data, and cleans up unattached receipts.
@@ -109,6 +114,8 @@ final class BackupService {
             .init(id: $0.id, categoryId: $0.categoryId, amountMinorUnits: $0.amountMinorUnits, currencyCode: $0.currencyCode,
                   effectiveStartMonth: $0.effectiveStartMonth, isActive: $0.isActive)
         }
+        let reconciliation = try BackupReconciliationData.make(from: context)
+        p.reconciliation = reconciliation.isEmpty ? nil : reconciliation
         return p
     }
 
@@ -187,6 +194,11 @@ final class BackupService {
                 context.insert(budget)
                 budgets.append(budget)
                 summary.budgetsAdded += 1
+            }
+            if let reconciliation = payload.reconciliation {
+                let r = try reconciliation.restore(into: context, knownTransactionIds: existingTransactions.union(payload.transactions.map(\.id)))
+                summary.statementsAdded = r.statementsAdded
+                summary.statementsSkipped = r.statementsSkipped
             }
             try context.save()
         } catch {

@@ -29,9 +29,18 @@ View ──@Query──▶ SwiftData (read)
 
 - **Enums:** stored as raw `String` values with typed computed accessors.
 - **Snapshots:** each model has a matching `Codable` `*Record` value type where needed. `TransactionRecord` is what calculations use.
-- **Schema versioning:** `TallySeamSchemaV1` plus `TallySeamMigrationPlan`. For V2, copy the V1 models into the schema enum as
-  frozen nested types, then add a `MigrationStage`. Phase 2 added `transferDestinationPaymentMethodId` with a default value.
-  No version has shipped yet, so this stays in V1.
+- **Schema versioning:** `TallySeamSchemaV1`–`V4` plus `TallySeamMigrationPlan` (lightweight stages only). The latest
+  version references the live models; an older version keeps a frozen copy of any model that changed after it
+  (V1 freezes `MoneyTransaction`, V3 freezes `StatementTransaction`). A model that has shipped is never edited in
+  place: add a field in a new version. Every upgrade is tested on a real on-disk store written with the old schema.
+  | Version | Change |
+  |---|---|
+  | 1.0.0 | Initial models |
+  | 2.0.0 | `MoneyTransaction.countedMonth` (count in another month) |
+  | 3.0.0 | Statement import tables (new models only) |
+  | 4.0.0 | `StatementTransaction.runningBalance` |
+- **Fixed identifiers:** bundle ID `io.github.aravindmarri.tallyseam`, store file `Application Support/Store/TallySeam.store`,
+  backup tag `TallySeam-Backup` (backups tagged `MyMoneyAI-Backup` from before the rename are still read).
 
 ## Financial rules
 
@@ -48,6 +57,42 @@ View ──@Query──▶ SwiftData (read)
 6. **Currencies:** summaries include only the selected currency. Other currencies are counted and reported as excluded, never converted.
 7. **Net cash flow:** income minus expenses. It is never presented as a balance or net worth.
 8. **Bills and receipts:** neither is ever summed as spending.
+
+## Statement import and reconciliation
+
+Full rules: [STATEMENT_IMPORT.md](STATEMENT_IMPORT.md).
+
+```
+Files picker ─▶ StatementImportService ─▶ DocumentFormatDetector
+                   │                         ├─ PDFStatementReader (PDFKit text, Vision OCR for scanned pages)
+                   │                         ├─ PlainTextDocumentReader
+                   │                         └─ CSVParser ─▶ CSVImportView (column mapping)
+                   ▼
+             StatementPreview  (DocumentClassifier, StatementHeaderExtractor, StatementLineParser)
+                   │  Save & Find Matches
+                   ▼
+StatementRepository ─▶ ImportedStatement / StatementTransaction / ReconciliationMatch
+        │                 ▲
+        │                 └── StatementReconciliationService (pure, deterministic scoring)
+        ├─ review: confirm · reject · create · skip · undo · bulk · pair transfers
+        └─ StatementBalanceValidator ─▶ verdict (verified / differences / not proven)
+```
+
+- **No double counting:** statement models are never summed. Income and spending come only from `MoneyTransaction`. A
+  statement line counts only once it is confirmed against, or turned into, a transaction. Card payments and own-account
+  transfers become one `transfer` transaction, which can be backed by one line on each account's statement.
+- **User approval:** matching only proposes. Transactions are created, and amounts changed, only by explicit user actions,
+  each in one all-or-nothing save with undo. Dates are never overwritten by posting dates.
+- **Reconciled** means every line is reviewed and the statement's balance is verified by `StatementBalanceValidator`.
+- **On-device assistance:** `StatementDescriptionAssisting` has a rule-based implementation used everywhere, and an
+  optional Apple Intelligence implementation (iOS 26, `FoundationModels`, availability-gated, off by default). Model answers
+  are checked (`DescriptionAnswerParser`) and only ever suggest a merchant name, a category from the user's own list and an
+  explanation. They never compute totals or change records.
+- **Performance:** matching computes day numbers and merchant keys once and compares each line only with transactions
+  within the date reach (binary search). PDF pages are read and OCR'd one at a time.
+- **Privacy:** documents are read from the picker's security-scoped URL into memory and not copied. Only the last four
+  digits of account numbers are kept, and PDF passwords are never stored. Statement data is included in encrypted
+  backups, and can be deleted separately while transactions are kept.
 
 ## Data safety
 

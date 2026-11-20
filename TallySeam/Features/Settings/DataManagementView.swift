@@ -68,6 +68,8 @@ struct DataManagementView: View {
     @State private var resultMessage: String?
     @State private var confirmReceiptCleanup = false
     @State private var showDeleteAll = false
+    @State private var confirmDeleteStatements = false
+    @Query private var savedStatements: [ImportedStatement]
     @State private var csvExport: CSVDocument?
     @State private var showCSVImporter = false
     @State private var csvImport: CSVImportRequest?
@@ -89,6 +91,15 @@ struct DataManagementView: View {
                 Text("Receipts")
             } footer: {
                 Text("Receipts whose transaction was deleted. Their images still take up space on this iPhone.")
+            }
+            Section {
+                LabeledContent("Saved statements", value: "\(savedStatements.count)")
+                Button("Delete Saved Statements", role: .destructive) { confirmDeleteStatements = true }
+                    .disabled(savedStatements.isEmpty)
+            } header: {
+                Text("Statements")
+            } footer: {
+                Text("Removes imported statements, their lines and match suggestions. Your transactions stay, including ones added from statements; they just show as not verified.")
             }
             Section {
                 Button("Delete All Data", role: .destructive) { showDeleteAll = true }
@@ -134,6 +145,12 @@ struct DataManagementView: View {
         .sheet(item: $csvImport) { request in
             CSVImportView(table: request.table) { message in resultMessage = message }
         }
+        .confirmationDialog("Delete \(savedStatements.count) saved statements?", isPresented: $confirmDeleteStatements, titleVisibility: .visible) {
+            Button("Delete Statements", role: .destructive) { run {
+                let n = try app.statements.deleteAllStatementData()
+                return "Deleted \(n) statements. Your transactions were kept."
+            } }
+        } message: { Text("This can't be undone. Transactions are not affected.") }
         .sheet(isPresented: $showDeleteAll) {
             DeleteAllDataView { run { try app.backup.deleteAllData(); return "All data was deleted." } }
         }
@@ -258,6 +275,7 @@ struct DataManagementView: View {
                 let s = try app.backup.restore(try decrypted.get())
                 var lines = ["Added \(s.transactionsAdded) transactions, \(s.receiptsAdded) receipts, \(s.billsAdded) bills, \(s.budgetsAdded) budgets, \(s.paymentMethodsAdded) payment methods and \(s.categoriesAdded) categories."]
                 if s.transactionsSkipped > 0 { lines.append("\(s.transactionsSkipped) transactions were already on this iPhone and were skipped.") }
+                if s.statementsAdded > 0 { lines.append("\(s.statementsAdded) saved statement(s) were restored with their matches.") }
                 if s.budgetsPaused > 0 { lines.append("\(s.budgetsPaused) budgets were added as paused because a matching budget already exists.") }
                 resultMessage = lines.joined(separator: "\n\n")
             } catch {

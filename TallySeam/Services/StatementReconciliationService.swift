@@ -178,11 +178,34 @@ struct StatementReconciliationService: Sendable {
 
     func reconcile(lines: [StatementLineInput], existing: [TransactionRecord], account: ReconciliationAccount,
                    alreadyMatched: Set<UUID> = [], learnedAliases: [String: String] = [:]) -> [LineReconciliation] {
+        // Work out each day number and merchant key once, then compare a line only with transactions
+        // dated near it (binary search), so long statements and long histories stay fast.
+        let reference = calendar.startOfDay(for: Date(timeIntervalSince1970: 0))
+        func dayNumber(_ d: Date) -> Int { calendar.dateComponents([.day], from: reference, to: calendar.startOfDay(for: d)).day ?? 0 }
         let pool = existing.filter { !alreadyMatched.contains($0.id) }
+            .map { (day: dayNumber($0.transactionDate), record: $0) }
+            .sorted { $0.day < $1.day }
+        let poolDays = pool.map(\.day)
+        var transactionKeys: [UUID: [String]] = [:]
+        for t in pool.map(\.record) {
+            transactionKeys[t.id] = [t.merchant, t.title].compactMap { $0 }.map { StatementMerchantNormalizer.normalize($0, learnedAliases: learnedAliases) }
+        }
+        func lowerBound(_ value: Int) -> Int {
+            var lo = 0, hi = poolDays.count
+            while lo < hi { let mid = (lo + hi) / 2; if poolDays[mid] < value { lo = mid + 1 } else { hi = mid } }
+            return lo
+        }
+        let reach = config.window.rawValue + config.extendedSearchDays
         var all: [UUID: [MatchCandidate]] = [:]
         for line in lines {
-            all[line.id] = pool.compactMap { candidate(line: line, transaction: $0, account: account, aliases: learnedAliases) }
-                .sorted { ($0.score, -abs($0.dateDifferenceDays), $0.transactionId.uuidString) > ($1.score, -abs($1.dateDifferenceDays), $1.transactionId.uuidString) }
+            let lineDays = ([line.transactionDate] + (line.postingDate.map { [$0] } ?? [])).map(dayNumber)
+            let start = lowerBound((lineDays.min() ?? 0) - reach), end = lowerBound((lineDays.max() ?? 0) + reach + 1)
+            let lineKey = StatementMerchantNormalizer.normalize(line.description, learnedAliases: learnedAliases)
+            all[line.id] = pool[start..<end].compactMap {
+                candidate(line: line, transaction: $0.record, account: account, aliases: learnedAliases,
+                          lineKey: lineKey, transactionKeys: transactionKeys[$0.record.id])
+            }
+            .sorted { ($0.score, -abs($0.dateDifferenceDays), $0.transactionId.uuidString) > ($1.score, -abs($1.dateDifferenceDays), $1.transactionId.uuidString) }
         }
 
         // Assign best-first across the whole statement so one transaction is never suggested for two
@@ -219,7 +242,8 @@ struct StatementReconciliationService: Sendable {
 
     /// Scores one pair, or nil when a hard rule rules it out.
     func candidate(line: StatementLineInput, transaction t: TransactionRecord, account: ReconciliationAccount,
-                   aliases: [String: String] = [:]) -> MatchCandidate? {
+                   aliases: [String: String] = [:], lineKey precomputedLineKey: String? = nil,
+                   transactionKeys precomputedKeys: [String]? = nil) -> MatchCandidate? {
         guard t.currencyCode == line.currencyCode else { return nil }
         guard let directionReason = directionCompatibility(line: line, transaction: t, account: account) else { return nil }
 
@@ -256,8 +280,8 @@ struct StatementReconciliationService: Sendable {
         }
 
         // Merchant.
-        let lineKey = StatementMerchantNormalizer.normalize(line.description, learnedAliases: aliases)
-        let names = [t.merchant, t.title].compactMap { $0 }.map { StatementMerchantNormalizer.normalize($0, learnedAliases: aliases) }
+        let lineKey = precomputedLineKey ?? StatementMerchantNormalizer.normalize(line.description, learnedAliases: aliases)
+        let names = precomputedKeys ?? [t.merchant, t.title].compactMap { $0 }.map { StatementMerchantNormalizer.normalize($0, learnedAliases: aliases) }
         let merchant = names.map { StatementMerchantNormalizer.similarity(lineKey, $0) }.max() ?? 0
         if merchant >= 0.99 { reasons.append("Same merchant (\(lineKey))") }
         else if merchant >= 0.6 { reasons.append("Similar merchant names") }
