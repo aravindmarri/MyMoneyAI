@@ -60,7 +60,7 @@ marked **Done** as each phase passes CI.
   new balance. Differences and coverage are shown; a statement is never called reconciled when data is missing.
 - Spending by account, card spending, bank cash flow, verified vs unverified, monthly coverage, open discrepancies.
 
-### Phase E: optional on-device AI, hardening
+### Phase E: optional on-device AI, hardening (**Done**: CI run #39)
 - Apple Foundation Models (availability-gated, optional) for unusual descriptions, merchant names and explanations only.
   Never for totals or for changing records. Full deterministic fallback.
 - Performance on long statements, privacy review, backup of the new models, more fixtures.
