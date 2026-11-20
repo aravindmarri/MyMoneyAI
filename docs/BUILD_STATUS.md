@@ -1,24 +1,24 @@
 # Build Status
 
-_Last updated: 2026-11-19 (CI run #33)_
+_Last updated: 2026-11-20 (CI run #35)_
 
 Development happens on Windows. iOS builds and tests run on GitHub Actions (`.github/workflows/ios-build.yml`, `macos-15` runner, XcodeGen).
 
-## Summary (CI run #33, commit `030ed7f`)
+## Summary (CI run #35, commit `429c46b`)
 
 | Check | Result |
 |---|---|
 | iOS Simulator compile | **Pass** (GitHub Actions) |
-| Automated tests | **Pass: 217 of 217** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
-| Unsigned device archive | **Pass.** `TallySeam-unsigned-ipa` artifact (1,456,263 bytes, kept for 14 days) |
-| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.tallyseam`, version 1.0 (33), display name TallySeam, minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
+| Automated tests | **Pass: 227 of 227** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
+| Unsigned device archive | **Pass.** `TallySeam-unsigned-ipa` artifact (1,509,867 bytes, kept for 14 days) |
+| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.tallyseam`, version 1.0 (35), display name TallySeam, minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
 | Network-use checks | **Pass.** Static source scan, linked-framework check on the IPA, and a runtime test showing OCR, calculations and backups make no requests |
 | Run on a real iPhone | **Not done.** Install with Sideloadly and a free Apple Account: see README → INSTALL_ON_IPHONE |
 | Manual UI check (layout, VoiceOver, Dynamic Type, dark mode) | **Not done** |
 | Airplane-mode check on a device | **Not done.** The code makes no network calls, and Vision OCR ran offline in the simulator test |
-| Static source checks (`python tools/check_sources.py`) | **Pass:** 88 Swift files |
+| Static source checks (`python tools/check_sources.py`) | **Pass:** 91 Swift files |
 
-Run: https://github.com/aravindmarri/TallySeam/actions/runs/44624687366
+Run: https://github.com/aravindmarri/TallySeam/actions/runs/44665542539
 
 ### CI history
 
@@ -37,6 +37,7 @@ Run: https://github.com/aravindmarri/TallySeam/actions/runs/44624687366
 | #13 | `bd249b2` | Fail | A new test expression was too slow to type-check. IPA job passed and the IPA was verified |
 | #14 | `e75e5ae` | **Pass** | 132 of 132 tests (Phases 1–6 and install readiness); IPA verified |
 | #16 | `d24c455` | **Pass** | 153 of 153 tests (Phase 7: CSV import and export); IPA verified |
+| #35 | `429c46b` | **Pass** | 227 of 227 tests (statement import Phase D), first try; schema 4.0.0; IPA verified |
 | #33 | `030ed7f` | **Pass** | 217 of 217 tests; app renamed to TallySeam everywhere (new app ID, store file and backup tag; old backups still import); IPA verified |
 | #30 | `0412770` | **Pass** | 216 of 216 tests (statement import Phase C), first try; IPA verified |
 | #24 | `6de2d28` | Fail | Phase B: 201 of 202; one test crashed and wasn't named (annotation gap). IPA job passed |
@@ -104,6 +105,13 @@ Run: https://github.com/aravindmarri/TallySeam/actions/runs/44624687366
 - Every row is previewed as new, already in the app, or unreadable (with the reason). A row is "already in the app" when a transaction on the same day has the same type, amount and a matching description; each existing transaction matches only one row. Re-importing the same file adds nothing
 - Categories come from a category column by name and type, otherwise from the existing suggestion engine. The statement's account and currency apply to every row. All rows are saved together or not at all
 
+**Statement import Phase D** (run #35): see docs/STATEMENT_IMPORT.md
+- Balance checks: transactions read vs closing/new balance, the statement's own summary (bank: opening + deposits − withdrawals; card: previous + purchases + fees + interest − payments), totals read vs printed; pending lines excluded
+- Running-balance walk pinpoints the line where a bank balance stops adding up
+- Verdicts (verified, differences, not proven) with explanations; "reconciled" requires every line reviewed and a verified balance
+- Reconciliation overview: verified vs unverified spending, spending by account and credit cards, bank cash flow from statements, statements with verdicts; statement balances shown as printed, never as a current balance; Home shows the verified share
+- Schema 4.0.0 adds `runningBalance` to statement lines; the shipped 3.0.0 model is frozen and the upgrade is tested on a real 3.0.0 store
+
 **Statement import Phase C** (run #30): see docs/STATEMENT_IMPORT.md
 - Line review side by side with differences highlighted: confirm, reject (next candidate promoted), choose another, add as new (category suggestion, account, transfer accounts), add as card payment or transfer, skip, review later; undo for every action
 - Amounts change only when the user chooses the statement amount (old amount kept for undo); dates never change; new transactions use the statement's transaction date
@@ -136,7 +144,7 @@ Run: https://github.com/aravindmarri/TallySeam/actions/runs/44624687366
 - Stable bundle ID `io.github.aravindmarri.tallyseam`, so a re-signed build installs over the previous one and keeps its data. The build number is the CI run number
 - CI unzips the IPA and fails unless it is the real arm64 iPhone device build
 
-## Tests (217, all passing in CI run #33)
+## Tests (227, all passing in CI run #35)
 
 | File | Count | Covers |
 |---|---|---|
@@ -155,9 +163,10 @@ Run: https://github.com/aravindmarri/TallySeam/actions/runs/44624687366
 | `StatementImportTests.swift` | 17 | Format detection; fingerprints; searchable multi-page PDF; scanned PDF through OCR; password-protected PDF (none, wrong, right); invalid files; routing of CSV, image, OFX, locked PDF and statement PDF; classification of bank, card, receipt, invoice, payment confirmation, unknown; bank and card header extraction; bank and card transaction lines (wrapped lines, balances, posting dates, kinds, issues kept); year across December/January; signs, CR/DR, pending, impossible dates; money tokens and last four; re-parse keeps edited lines; CSV balance and pending columns; remembered mappings |
 | `ReconciliationTests.swift` | 23 | Merchant normalization (Walmart spellings, prefixes, store numbers, locations, Amazon, learned aliases) and similarity; Walmart posted 2 days later; date differences both ways, windows, weekend delay, posting dates; calendar days across month, year and DST; currency and direction rules; card repayment matches only the transfer and totals stay $100; tip differences; identical purchases one-to-one; ties shown; confirmed transactions skipped; repository save, duplicate file, wrong type, account reuse, re-run with a narrower window, undo import, delete all; learned aliases stored once; window preference; 2.0.0 store written, upgraded and extended |
 | `StatementReviewTests.swift` | 11 | Confirm learns an alias and undo restores; statement amount only on request, restored by undo, dates unchanged; reject promotes the next candidate and stays rejected after re-matching; currency, direction and already-matched rules; adding a missing purchase (transaction date, category, account, notes) and undo deleting it; skip and undo; bulk confirm only strong and all-or-nothing; the $100 card repayment across two statements (one transfer, spending $100, one line per account, undo releases the other side); overlapping statements and identical lines; transactions missing from the statement; incomplete when lines couldn't be read |
+| `BalanceValidationTests.swift` | 10 | Bank statement balances; unread lines mean not proven; a missing row found by the running balance (exact line); card formula; a misread summary figure; no opening balance; pending lines left out; verified-spending coverage with refunds, transfers, other currencies and counted months; 3.0.0 → 4.0.0 upgrade on a real store; saved bank statement keeps running balances and needs a proven balance to be reconciled |
 | `ReceiptStorageTests.swift` | 8 | File save, load and delete; path-traversal rejection; orphan cleanup; linking receipts to new or existing transactions; failed saves write nothing; receipts aren't counted as spending |
 
-Xcode counts parameterized cases separately, which is why the total is 217. All tests use synthetic data only.
+Xcode counts parameterized cases separately, which is why the total is 227. All tests use synthetic data only.
 
 ## Known issues and risks
 

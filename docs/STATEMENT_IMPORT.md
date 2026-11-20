@@ -55,7 +55,7 @@ marked **Done** as each phase passes CI.
 - Transfer pairing across accounts (card payment out of checking ↔ payment credit on the card): one transfer, never an
   expense. Interest and fees are expenses. Cash withdrawals are transfers to Cash when cash is tracked.
 
-### Phase D: balance validation and dashboards
+### Phase D: balance validation and dashboards (**Done**: CI run #35)
 - Bank: opening + deposits − withdrawals = closing. Card: previous + purchases + fees + interest − payments − credits =
   new balance. Differences and coverage are shown; a statement is never called reconciled when data is missing.
 - Spending by account, card spending, bank cash flow, verified vs unverified, monthly coverage, open discrepancies.
