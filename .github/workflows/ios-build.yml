@@ -23,10 +23,24 @@ env:
 jobs:
   build-and-test:
     name: Simulator build and tests
-    runs-on: macos-15
+    runs-on: macos-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
+
+      - name: Use the newest Xcode (needed for Apple Intelligence)
+        run: |
+          # The newest non-beta Xcode on the runner. Xcode 26+ includes the FoundationModels SDK;
+          # with an older Xcode the app builds without Apple Intelligence.
+          X=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X/Contents/Developer"; fi
+          xcodebuild -version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          if [ -d "$SDK/System/Library/Frameworks/FoundationModels.framework" ]; then
+            echo "::notice title=Apple Intelligence::FoundationModels is in the iOS SDK ($(xcodebuild -version | head -1)); the on-device model can be used"
+          else
+            echo "::warning title=Apple Intelligence::FoundationModels is not in this SDK ($(xcodebuild -version | head -1)); the app is built without Apple Intelligence"
+          fi
 
       - name: Show toolchain
         run: |
@@ -149,10 +163,24 @@ jobs:
 
   unsigned-archive:
     name: Unsigned device archive (IPA for re-signing)
-    runs-on: macos-15
+    runs-on: macos-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
+
+      - name: Use the newest Xcode (needed for Apple Intelligence)
+        run: |
+          # The newest non-beta Xcode on the runner. Xcode 26+ includes the FoundationModels SDK;
+          # with an older Xcode the app builds without Apple Intelligence.
+          X=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X/Contents/Developer"; fi
+          xcodebuild -version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          if [ -d "$SDK/System/Library/Frameworks/FoundationModels.framework" ]; then
+            echo "::notice title=Apple Intelligence::FoundationModels is in the iOS SDK ($(xcodebuild -version | head -1)); the on-device model can be used"
+          else
+            echo "::warning title=Apple Intelligence::FoundationModels is not in this SDK ($(xcodebuild -version | head -1)); the app is built without Apple Intelligence"
+          fi
 
       - name: Install XcodeGen and generate project
         run: |
@@ -224,8 +252,15 @@ jobs:
           [ "$FAIL" = 0 ] || exit 1
           DISPLAY=$(plutil -extract CFBundleDisplayName raw "$APP/Info.plist")
           [ "$DISPLAY" = "TallySeam" ] || { echo "::error::Display name is $DISPLAY, expected TallySeam"; exit 1; }
+          if echo "$LINKED" | grep -q '/FoundationModels.framework/'; then
+            otool -l "$APP/TallySeam" | grep -B3 FoundationModels.framework | grep -q LC_LOAD_WEAK_DYLIB \
+              || { echo "::error::FoundationModels must be weak-linked so the app runs on iOS before 26"; exit 1; }
+            AI="weak-linked"
+          else
+            AI="not included"
+          fi
           SIZE=$(stat -f%z build/TallySeam-unsigned.ipa)
-          echo "::notice title=IPA verified::name=$DISPLAY, bundleId=$BUNDLE_ID, version=$VERSION ($BUILD), platform=$PLATFORM/$BUILD_PLATFORM, archs=$ARCHS, minOS=$MIN_OS, bytes=$SIZE"
+          echo "::notice title=IPA verified::name=$DISPLAY, appleIntelligence=$AI, bundleId=$BUNDLE_ID, version=$VERSION ($BUILD), platform=$PLATFORM/$BUILD_PLATFORM, archs=$ARCHS, minOS=$MIN_OS, bytes=$SIZE"
           {
             echo "## IPA verification"
             echo

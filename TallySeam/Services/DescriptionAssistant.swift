@@ -111,6 +111,29 @@ enum DescriptionAnswerParser {
 enum DescriptionAssistantFactory {
     static let preferenceKey = "assist.useOnDeviceModel"
 
+    /// Why the on-device model can or can't be used on this iPhone, in plain language.
+    static var onDeviceModelStatus: String {
+        #if canImport(FoundationModels)
+        if #available(iOS 26.0, *) {
+            switch SystemLanguageModel.default.availability {
+            case .available:
+                return "Apple Intelligence is ready on this iPhone."
+            case .unavailable(.deviceNotEligible):
+                return "This iPhone doesn't support Apple Intelligence, so TallySeam's built-in rules are used."
+            case .unavailable(.appleIntelligenceNotEnabled):
+                return "Turn on Apple Intelligence in the iPhone Settings app (Apple Intelligence & Siri) to use it here."
+            case .unavailable(.modelNotReady):
+                return "Apple Intelligence is still downloading or getting ready. Try again later."
+            case .unavailable:
+                return "Apple Intelligence isn't available right now, so TallySeam's built-in rules are used."
+            }
+        }
+        return "Apple Intelligence needs iOS 26 or later. TallySeam's built-in rules are used."
+        #else
+        return "This build of TallySeam was made without Apple Intelligence support, so its built-in rules are used."
+        #endif
+    }
+
     static var isOnDeviceModelAvailable: Bool {
         #if canImport(FoundationModels)
         if #available(iOS 26.0, *) {

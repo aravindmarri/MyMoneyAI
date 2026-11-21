@@ -62,7 +62,7 @@ private struct SmartSuggestionsSection: View {
         } footer: {
             Text(DescriptionAssistantFactory.isOnDeviceModelAvailable
                  ? "Helps explain unusual statement descriptions and suggest merchant names, on this iPhone only. It never changes amounts or saves anything by itself."
-                 : "Apple Intelligence isn't available on this iPhone, so TallySeam's built-in rules are used. They work fully offline.")
+                 : DescriptionAssistantFactory.onDeviceModelStatus + " The built-in rules work fully offline.")
         }
     }
 }
