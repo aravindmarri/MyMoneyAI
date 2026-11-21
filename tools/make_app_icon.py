@@ -73,17 +73,30 @@ def draw():
 
     # White band along the bottom with the AM logo in one black line: dot A dot M dot, evenly spaced.
     # iOS rounds the band's outer corners along with the icon.
-    band_top = 810
+    band_top = 880
     d.rectangle([0, p(band_top), SIZE, SIZE], fill=WHITE)
     cy = (band_top + 1024) / 2
-    f = font(p(120))
-    r = p(17)
-    for i, item in enumerate(["•", "A", "•", "M", "•"]):
-        cx = 272 + i * 120
+    f = font(p(64))
+    r = p(10)
+    # Equal visible gaps between neighbours (edge to edge), spanning the same width as before.
+    items = ["•", "A", "•", "M", "•"]
+    widths = []
+    for item in items:
         if item == "•":
-            d.ellipse([p(cx) - r, p(cy) - r, p(cx) + r, p(cy) + r], fill=BLACK)
+            widths.append(2 * r)
         else:
-            d.text((p(cx), p(cy)), item, font=f, fill=BLACK, anchor="mm")
+            x0, _, x1, _ = d.textbbox((0, 0), item, font=f, anchor="lt")
+            widths.append(x1 - x0)
+    span = p(620)
+    gap = (span - sum(widths)) / (len(items) - 1)
+    x = p(512) - span / 2
+    for item, w in zip(items, widths):
+        cx = x + w / 2
+        if item == "•":
+            d.ellipse([cx - r, p(cy) - r, cx + r, p(cy) + r], fill=BLACK)
+        else:
+            d.text((cx, p(cy)), item, font=f, fill=BLACK, anchor="mm")
+        x += w + gap
 
     return img.resize((1024, 1024), Image.LANCZOS)
 
