@@ -26,7 +26,7 @@ enum AccountPresets {
         case .debitCard: return t + " Debit"
         case .creditCard: return t + " Credit"
         case .bankTransfer: return t + " Checking"
-        case .cash, .applePay, .other: return t
+        case .cash, .applePay, .investment, .other: return t
         }
     }
 
@@ -37,7 +37,7 @@ enum AccountPresets {
         case .creditCard: creditIssuers
         case .cash: ["Cash"]
         case .applePay: ["Apple Pay"]
-        case .other: []
+        case .investment, .other: []
         }
     }
 }

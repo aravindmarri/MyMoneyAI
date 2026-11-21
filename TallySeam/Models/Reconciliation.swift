@@ -33,7 +33,7 @@ enum FinancialAccountType: String, CaseIterable, Identifiable, Codable, Sendable
         case .creditCard: self = .creditCard
         case .debitCard, .bankTransfer: self = .checking
         case .cash: self = .cash
-        case .applePay, .other: self = .other
+        case .applePay, .investment, .other: self = .other
         }
     }
 }

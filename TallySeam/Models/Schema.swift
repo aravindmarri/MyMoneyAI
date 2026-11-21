@@ -111,16 +111,26 @@ enum TallySeamSchemaV4: VersionedSchema {
     }
 }
 
+/// 5.0.0: investments and monthly balance snapshots. New models only, so a lightweight stage adds
+/// the tables and every existing record is kept as it is.
+enum TallySeamSchemaV5: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(5, 0, 0) }
+    static var models: [any PersistentModel.Type] {
+        TallySeamSchemaV4.models + [Investment.self, MonthlySnapshot.self]
+    }
+}
+
 /// The schema every container opens with.
-typealias TallySeamCurrentSchema = TallySeamSchemaV4
+typealias TallySeamCurrentSchema = TallySeamSchemaV5
 
 enum TallySeamMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [TallySeamSchemaV1.self, TallySeamSchemaV2.self, TallySeamSchemaV3.self, TallySeamSchemaV4.self]
+        [TallySeamSchemaV1.self, TallySeamSchemaV2.self, TallySeamSchemaV3.self, TallySeamSchemaV4.self, TallySeamSchemaV5.self]
     }
     static var stages: [MigrationStage] {
         [.lightweight(fromVersion: TallySeamSchemaV1.self, toVersion: TallySeamSchemaV2.self),
          .lightweight(fromVersion: TallySeamSchemaV2.self, toVersion: TallySeamSchemaV3.self),
-         .lightweight(fromVersion: TallySeamSchemaV3.self, toVersion: TallySeamSchemaV4.self)]
+         .lightweight(fromVersion: TallySeamSchemaV3.self, toVersion: TallySeamSchemaV4.self),
+         .lightweight(fromVersion: TallySeamSchemaV4.self, toVersion: TallySeamSchemaV5.self)]
     }
 }

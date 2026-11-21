@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 enum PaymentMethodType: String, Codable, CaseIterable, Identifiable, Sendable {
-    case cash, debitCard, creditCard, bankTransfer, applePay, other
+    case cash, debitCard, creditCard, bankTransfer, applePay, investment, other
     var id: String { rawValue }
     var displayName: String {
         switch self {
@@ -11,6 +11,7 @@ enum PaymentMethodType: String, Codable, CaseIterable, Identifiable, Sendable {
         case .creditCard: "Credit Card"
         case .bankTransfer: "Bank Transfer"
         case .applePay: "Apple Pay"
+        case .investment: "Investment Account"
         case .other: "Other"
         }
     }
@@ -20,6 +21,7 @@ enum PaymentMethodType: String, Codable, CaseIterable, Identifiable, Sendable {
         case .debitCard, .creditCard: "creditcard.fill"
         case .bankTransfer: "building.columns.fill"
         case .applePay: "apple.logo"
+        case .investment: "chart.line.uptrend.xyaxis"
         case .other: "wallet.pass.fill"
         }
     }

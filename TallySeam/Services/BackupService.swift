@@ -38,6 +38,8 @@ struct BackupPayload: Codable, Equatable, Sendable {
     var budgets: [BudgetItem] = []
     /// Statement import data. Absent in backups made before statement import.
     var reconciliation: BackupReconciliationData?
+    /// Investments and monthly snapshots. Absent in backups made before investments.
+    var investments: BackupInvestmentData?
 
     /// Rejects data the app could never have produced. Nothing is imported if this fails.
     func validate() throws {
@@ -116,6 +118,8 @@ final class BackupService {
         }
         let reconciliation = try BackupReconciliationData.make(from: context)
         p.reconciliation = reconciliation.isEmpty ? nil : reconciliation
+        let investments = try BackupInvestmentData.make(from: context)
+        p.investments = investments.isEmpty ? nil : investments
         return p
     }
 
@@ -200,6 +204,10 @@ final class BackupService {
                 summary.statementsAdded = r.statementsAdded
                 summary.statementsSkipped = r.statementsSkipped
             }
+            if let investments = payload.investments {
+                try investments.validate()
+                try investments.restore(into: context)
+            }
             try context.save()
         } catch {
             context.rollback()
@@ -249,6 +257,8 @@ final class BackupService {
         try context.fetch(FetchDescriptor<ImportSession>()).forEach { context.delete($0) }
         try context.fetch(FetchDescriptor<FinancialAccount>()).forEach { context.delete($0) }
         try context.fetch(FetchDescriptor<MerchantAlias>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<Investment>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<MonthlySnapshot>()).forEach { context.delete($0) }
         try context.save()
         try storage.removeOrphans(referenced: [])
         DefaultCategories.makeAll().forEach { context.insert($0) }
