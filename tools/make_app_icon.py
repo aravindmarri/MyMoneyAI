@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Draws the TallySeam app icon (1024x1024 PNG, opaque, full-bleed: iOS rounds the corners).
 
-Design: four white tally marks crossed by a stitched mint seam on navy, with the AM monogram badge
-in the bottom-right corner. Rendered at 4x and scaled down for smooth edges.
+Design: a white T with stitched seams along its bar and stem on teal, with the AM logo in a black
+block in the bottom-right corner. Rendered at 4x and scaled down for smooth edges.
 
 Usage: python tools/make_app_icon.py
 Writes TallySeam/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png and branding/AppIcon-1024.png.
@@ -18,6 +18,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 S = 4  # supersampling factor
 SIZE = 1024 * S
 NAVY = (20, 33, 61)
+TEAL = (15, 118, 110)
 WHITE = (255, 255, 255)
 MINT = (94, 234, 212)
 BLACK = (0, 0, 0)
@@ -61,14 +62,14 @@ def dashed_line(d, a, b, width, dash, gap, color):
 
 
 def draw():
-    img = Image.new("RGB", (SIZE, SIZE), NAVY)
+    img = Image.new("RGB", (SIZE, SIZE), TEAL)
     d = ImageDraw.Draw(img)
 
-    # Four tally marks.
-    for x in (230, 360, 490, 620):
-        round_line(d, (p(x), p(220)), (p(x), p(690)), p(64), WHITE)
-    # The stitched seam crossing them, in place of the fifth stroke.
-    dashed_line(d, (p(160), p(640)), (p(720), p(300)), p(50), p(86), p(50), MINT)
+    # A white T (bar and stem) with stitched seams running along the middle of each.
+    d.rounded_rectangle([p(250), p(230), p(734), p(360)], radius=p(34), fill=WHITE)
+    d.rounded_rectangle([p(427), p(230), p(557), p(770)], radius=p(34), fill=WHITE)
+    dashed_line(d, (p(285), p(295)), (p(699), p(295)), p(18), p(46), p(34), TEAL)
+    dashed_line(d, (p(492), p(390)), (p(492), p(740)), p(18), p(46), p(34), TEAL)
 
     # Black corner block running to the bottom and right edges; iOS's rounded icon corner becomes its
     # outer edge. Only the inner (top-left) corner is rounded, like the logo's own square.
