@@ -73,8 +73,7 @@ def draw():
     # AM monogram badge (the developer's logo): black rounded square, A and dot on top, dot and M below.
     # Kept clear of the corner iOS rounds off (about 230 px radius at 1024).
     x0, y0, size = 680, 680, 280
-    d.rounded_rectangle([p(x0), p(y0), p(x0 + size), p(y0 + size)], radius=p(64), fill=BLACK,
-                        outline=WHITE, width=p(10))
+    d.rounded_rectangle([p(x0), p(y0), p(x0 + size), p(y0 + size)], radius=p(64), fill=BLACK)
     f = font(p(110))
     d.text((p(x0 + 78), p(y0 + 108)), "A", font=f, fill=WHITE, anchor="mm")
     d.text((p(x0 + 190), p(y0 + 190)), "M", font=f, fill=WHITE, anchor="mm")
