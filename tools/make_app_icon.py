@@ -65,21 +65,31 @@ def draw():
     d = ImageDraw.Draw(img)
 
     # Four tally marks.
-    for x in (230, 360, 490, 620):
+    for x in (210, 340, 470, 600):
         round_line(d, (p(x), p(220)), (p(x), p(690)), p(64), WHITE)
     # The stitched seam crossing them, in place of the fifth stroke.
-    dashed_line(d, (p(160), p(640)), (p(720), p(300)), p(50), p(86), p(50), MINT)
+    dashed_line(d, (p(140), p(640)), (p(700), p(300)), p(50), p(86), p(50), MINT)
 
-    # AM monogram badge (the developer's logo): black rounded square, A and dot on top, dot and M below.
-    # Kept clear of the corner iOS rounds off (about 230 px radius at 1024).
-    x0, y0, size = 680, 680, 280
-    d.rounded_rectangle([p(x0), p(y0), p(x0 + size), p(y0 + size)], radius=p(64), fill=BLACK)
-    f = font(p(110))
-    d.text((p(x0 + 78), p(y0 + 108)), "A", font=f, fill=WHITE, anchor="mm")
-    d.text((p(x0 + 190), p(y0 + 190)), "M", font=f, fill=WHITE, anchor="mm")
-    r = p(16)
-    for (cx, cy) in ((x0 + 200, y0 + 90), (x0 + 80, y0 + 196)):
-        d.ellipse([p(cx) - r, p(cy) - r, p(cx) + r, p(cy) + r], fill=WHITE)
+    # Black corner block running to the bottom and right edges; iOS's rounded icon corner becomes its
+    # outer edge. Only the inner (top-left) corner is rounded, like the logo's own square.
+    block = 380
+    bx = 1024 - block
+    d.rounded_rectangle([p(bx), p(bx), p(1024) + p(200), p(1024) + p(200)], radius=p(75), fill=BLACK)
+
+    # The AM logo exactly as in branding/am-logo.svg (a 75-unit square): "A" and a dot on top, a dot and
+    # "M" below, same positions and sizes, placed inside the part of the block iOS doesn't round off.
+    L = 300
+    lx, ly = bx + 24, bx + 24
+
+    def u(v):
+        return v / 75 * L
+
+    d.text((p(lx + u(13.0)), p(ly + u(25.9))), "A", font=font(p(u(19.41))), fill=WHITE, anchor="ls")
+    d.text((p(lx + u(47.41)), p(ly + u(63.47))), "M", font=font(p(u(20.38))), fill=WHITE, anchor="ls")
+    r = p(u(3.75))
+    for (cx, cy) in ((56.25, 18.77), (18.75, 56.32)):
+        x, y = p(lx + u(cx)), p(ly + u(cy))
+        d.ellipse([x - r, y - r, x + r, y + r], fill=WHITE)
 
     return img.resize((1024, 1024), Image.LANCZOS)
 
