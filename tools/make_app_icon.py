@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Draws the TallySeam app icon (1024x1024 PNG, opaque, full-bleed: iOS rounds the corners).
 
-Design: a white T with stitched seams along its bar and stem on teal, with the AM logo in a black
-block in the bottom-right corner. Rendered at 4x and scaled down for smooth edges.
+Design: a white T with stitched seams along its bar and stem on teal, with a black band across the
+bottom carrying the AM mark on one line. Rendered at 4x and scaled down for smooth edges.
 
 Usage: python tools/make_app_icon.py
 Writes TallySeam/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png and branding/AppIcon-1024.png.
@@ -71,28 +71,21 @@ def draw():
     dashed_line(d, (p(285), p(295)), (p(699), p(295)), p(18), p(46), p(34), TEAL)
     dashed_line(d, (p(492), p(390)), (p(492), p(740)), p(18), p(46), p(34), TEAL)
 
-    # Black corner block running to the bottom and right edges; iOS's rounded icon corner becomes its
-    # outer edge. Only the inner (top-left) corner is rounded, like the logo's own square.
-    block = 300
-    bx = 1024 - block
-    d.rounded_rectangle([p(bx), p(bx), p(1024) + p(200), p(1024) + p(200)], radius=p(75), fill=BLACK)
-
-    # The AM logo as one row, "• A • M •", centred in the part of the block iOS doesn't round off
-    # (a little up and left of the block's middle, because the outer corner is cut away).
-    f = font(p(70))
-    r, gap = p(9), p(12)
-    parts = ["dot", "A", "dot", "M", "dot"]
-    widths = [2 * r if t == "dot" else f.getlength(t) for t in parts]
-    total = sum(widths) + gap * (len(parts) - 1)
-    x = p(bx + 135) - total / 2
-    baseline = p(bx + 150)
-    cap = f.getbbox("A", anchor="ls")[1]  # negative: cap height above the baseline
-    for t, w in zip(parts, widths):
-        if t == "dot":
-            cy = baseline + cap / 2
-            d.ellipse([x, cy - r, x + 2 * r, cy + r], fill=WHITE)
+    # A black band across the bottom with the AM mark on one line: dot, A, dot, M, dot.
+    band_top = 830
+    d.rectangle([0, p(band_top), SIZE, SIZE], fill=BLACK)
+    f = font(p(96))
+    cy = band_top + 92            # visual middle of the band above iOS's rounded bottom corners
+    r = p(13)
+    items = ["dot", "A", "dot", "M", "dot"]
+    widths = [p(26) if i == "dot" else d.textlength(i, font=f) for i in items]
+    gap = p(46)
+    x = (SIZE - (sum(widths) + gap * (len(items) - 1))) / 2
+    for item, w in zip(items, widths):
+        if item == "dot":
+            d.ellipse([x + w / 2 - r, p(cy) - r, x + w / 2 + r, p(cy) + r], fill=WHITE)
         else:
-            d.text((x, baseline), t, font=f, fill=WHITE, anchor="ls")
+            d.text((x, p(cy)), item, font=f, fill=WHITE, anchor="lm")
         x += w + gap
 
     return img.resize((1024, 1024), Image.LANCZOS)
