@@ -109,6 +109,7 @@ struct StatementDetailView: View {
                     Text("Removes the statement, releases every confirmed match, restores any amount you changed, and deletes transactions that were added from this statement. Nothing else is touched.")
                 }
             }
+            .brandScreen()
             .navigationTitle(statement.institutionName ?? statement.originalFilename)
             .navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Undo this import?", isPresented: $confirmDelete, titleVisibility: .visible) {

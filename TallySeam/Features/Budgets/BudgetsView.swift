@@ -23,6 +23,7 @@ struct BudgetsView: View {
                 list
             }
         }
+        .brandScreen()
         .navigationTitle("Budgets")
         .toolbar {
             Button { editing = .new(currencyCode: currency) } label: { Image(systemName: "plus") }
@@ -181,6 +182,7 @@ struct BudgetEditorView: View {
                     }
                 }
             }
+            .brandScreen()
             .navigationTitle(draft.editingId == nil ? "New Budget" : "Edit Budget")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

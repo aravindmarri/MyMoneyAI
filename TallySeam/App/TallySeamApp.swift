@@ -14,6 +14,7 @@ struct TallySeamApp: App {
             switch launch {
             case .success(let container):
                 LockGate { RootTabView() }
+                    .tint(Theme.brand)
                     .environment(container)
                     .modelContainer(container.persistence.container)
             case .failure(let error):

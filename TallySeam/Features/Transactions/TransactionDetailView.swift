@@ -51,6 +51,7 @@ struct TransactionDetailView: View {
             timestampsSection(t)
             actionsSection(record)
         }
+        .brandScreen()
         .navigationTitle(t.merchant ?? t.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

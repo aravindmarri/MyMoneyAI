@@ -41,6 +41,7 @@ struct ReconciliationOverviewView: View {
             bankCashFlowSection
             statementsSection
         }
+        .brandScreen()
         .navigationTitle("Reconciliation")
     }
 

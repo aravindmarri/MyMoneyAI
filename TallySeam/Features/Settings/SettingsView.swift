@@ -28,6 +28,7 @@ struct SettingsView: View {
                     LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                 }
             }
+            .brandScreen()
             .navigationTitle("Settings")
         }
     }
@@ -82,6 +83,7 @@ struct PrivacyInfoView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }
+        .brandScreen()
         .navigationTitle("Privacy")
     }
 }

@@ -70,6 +70,7 @@ struct TransactionEditorView: View {
     var body: some View {
         NavigationStack {
             form
+                .brandScreen()
                 .navigationTitle(navigationTitle)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { toolbarContent }

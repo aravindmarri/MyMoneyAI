@@ -28,6 +28,7 @@ struct CategoriesView: View {
                 }
             }
         }
+        .brandScreen()
         .navigationTitle("Categories")
         .toolbar {
             Menu {
@@ -130,6 +131,7 @@ struct CategoryEditorView: View {
                     }
                 }
             }
+            .brandScreen()
             .navigationTitle(isNew ? "New Category" : "Edit Category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -191,6 +193,7 @@ struct ReassignCategoryView: View {
                     Button("Move and Delete Category", role: .destructive, action: confirm)
                 }
             }
+            .brandScreen()
             .navigationTitle("Delete Category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }

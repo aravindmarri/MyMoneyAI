@@ -189,6 +189,7 @@ struct PDFPasswordView: View {
                     Text("“\(filename)” is protected. The password is used only to open it now and is never saved.")
                 }
             }
+            .brandScreen()
             .navigationTitle("Open PDF")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

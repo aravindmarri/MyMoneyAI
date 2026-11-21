@@ -47,6 +47,7 @@ struct ReceiptReviewView: View {
                 paymentSection
                 recognizedTextSection
             }
+            .brandScreen()
             .navigationTitle("Review Receipt")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }

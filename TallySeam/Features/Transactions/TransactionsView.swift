@@ -57,6 +57,7 @@ struct TransactionsView: View {
                     .listStyle(.insetGrouped)
                 }
             }
+            .brandScreen()
             .navigationTitle("Transactions")
             .searchable(text: $filter.searchText, prompt: "Merchant or title")
             .toolbar {
@@ -151,6 +152,7 @@ struct TransactionFilterView: View {
                         .disabled(!filter.hasActiveFilters)
                 }
             }
+            .brandScreen()
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }

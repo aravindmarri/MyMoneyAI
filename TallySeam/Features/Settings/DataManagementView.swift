@@ -107,6 +107,7 @@ struct DataManagementView: View {
                 Text("Permanently erases every transaction, receipt, bill, budget, payment method and custom category on this iPhone.")
             }
         }
+        .brandScreen()
         .navigationTitle("Backup & Data")
         .disabled(working)
         .overlay { if working { ProgressView("Working…").padding().background(.regularMaterial, in: .rect(cornerRadius: 12)) } }
@@ -316,6 +317,7 @@ struct BackupPasswordView: View {
                     Text("The passwords don't match.").foregroundStyle(.orange)
                 }
             }
+            .brandScreen()
             .navigationTitle(isExport ? "Encrypt Backup" : "Open Backup")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -361,6 +363,7 @@ struct DeleteAllDataView: View {
                     .disabled(typed != "DELETE")
                 }
             }
+            .brandScreen()
             .navigationTitle("Delete All Data")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }

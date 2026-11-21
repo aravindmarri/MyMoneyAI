@@ -69,6 +69,7 @@ struct CSVImportView: View {
                 summarySection
                 previewSection
             }
+            .brandScreen()
             .navigationTitle("Import CSV")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

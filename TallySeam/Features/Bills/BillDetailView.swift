@@ -38,6 +38,7 @@ struct BillDetailView: View {
                 Button("Delete Bill", role: .destructive) { confirmDelete = true }
             }
         }
+        .brandScreen()
         .navigationTitle(bill.title)
         .toolbar { Button("Edit") { editing = .edit(bill) } }
         .sheet(item: $editing) { BillEditorView(route: $0) }
@@ -141,6 +142,7 @@ struct BillPaymentView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
             }
+            .brandScreen()
             .navigationTitle("Pay \(bill.title)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

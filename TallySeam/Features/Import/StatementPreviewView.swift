@@ -40,6 +40,7 @@ struct StatementPreviewView: View {
             }
             saveSection(p)
         }
+        .brandScreen()
         .navigationTitle(p.header.institution ?? "Statement")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: p.kind) { _, _ in reparse() }
@@ -360,6 +361,7 @@ struct ExtractedTextView: View {
                 }
             }
         }
+        .brandScreen()
         .navigationTitle("Extracted Text")
     }
 }
@@ -438,6 +440,7 @@ struct StatementLineEditorView: View {
                     Toggle("Pending", isOn: $isPending)
                 }
             }
+            .brandScreen()
             .navigationTitle(routeIsIssue ? "Enter Line" : "Edit Line")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

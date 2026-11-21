@@ -28,6 +28,7 @@ struct PaymentMethodsView: View {
                 }
             }
         }
+        .brandScreen()
         .navigationTitle("Payment Methods")
         .toolbar {
             Menu {
@@ -182,6 +183,7 @@ struct PaymentMethodEditorView: View {
                     }
                 }
             }
+            .brandScreen()
             .navigationTitle(editingId == nil ? "New Payment Method" : "Edit Payment Method")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

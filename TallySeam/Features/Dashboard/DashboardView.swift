@@ -45,7 +45,7 @@ struct DashboardView: View {
                 .padding(.horizontal)
                 .padding(.bottom, Theme.spacing)
             }
-            .background(Color(.systemGroupedBackground))
+            .brandScreen()
             .navigationTitle("Home")
             .sheet(item: $editorRoute) { TransactionEditorView(route: $0) }
             .sheet(isPresented: $showAccountSetup) { AccountSetupView() }
@@ -66,7 +66,7 @@ struct DashboardView: View {
             }
             .accessibilityLabel("Next month")
         }
-        .card()
+        .hero()
     }
 
     private func summaryGrid(_ s: PeriodSummary) -> some View {

@@ -47,6 +47,7 @@ struct AccountSetupView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
             }
+            .brandScreen()
             .navigationTitle("Set Up Accounts")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

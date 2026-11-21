@@ -19,6 +19,7 @@ struct BillsView: View {
                 list
             }
         }
+        .brandScreen()
         .navigationTitle("Recurring Bills")
         .toolbar {
             Button { editing = .new(currencyCode: currency) } label: { Image(systemName: "plus") }
@@ -154,6 +155,7 @@ struct BillEditorView: View {
                     }
                 }
             }
+            .brandScreen()
             .navigationTitle(draft.editingId == nil ? "New Bill" : "Edit Bill")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

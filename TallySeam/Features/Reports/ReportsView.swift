@@ -44,9 +44,9 @@ struct ReportsView: View {
                         .padding(.horizontal)
                         .padding(.bottom, Theme.spacing)
                     }
-                    .background(Color(.systemGroupedBackground))
                 }
             }
+            .brandScreen()
             .navigationTitle("Reports")
         }
     }

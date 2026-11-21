@@ -44,6 +44,7 @@ struct StatementLineReviewView: View {
                     ContentUnavailableView("Line Not Found", systemImage: "doc.questionmark")
                 }
             }
+            .brandScreen()
             .navigationTitle("Review Line")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
@@ -245,6 +246,7 @@ struct ChooseTransactionView: View {
             }
         }
         .searchable(text: $search)
+        .brandScreen()
         .navigationTitle("Choose Transaction")
         .alert("Can't Confirm", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("OK", role: .cancel) {}
@@ -331,6 +333,7 @@ struct NewTransactionFromLineView: View {
                 ProgressView()
             }
         }
+        .brandScreen()
         .navigationTitle(forceTransfer ? "Add Transfer" : "Add Transaction")
         .task {
             load()
@@ -399,6 +402,7 @@ struct BulkConfirmView: View {
                     Text(items.isEmpty ? "No strong matches are waiting." : "Only strong matches with the same amount and a single clear candidate are included. Nothing is changed except marking these lines confirmed.")
                 }
             }
+            .brandScreen()
             .navigationTitle("Confirm \(items.count) Matches")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -25,6 +25,7 @@ struct ReceiptScannerView: View {
                 importSection
                 recentSection
             }
+            .brandScreen()
             .navigationTitle("Import")
             .navigationDestination(for: UUID.self) { TransactionDetailView(transactionID: $0) }
             .overlay { if model.isProcessing { processingOverlay } }
