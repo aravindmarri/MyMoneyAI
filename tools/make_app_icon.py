@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Draws the TallySeam app icon (1024x1024 PNG, opaque, full-bleed: iOS rounds the corners).
 
-Design: a white T with stitched seams along its bar and stem on teal, above a black strip along the
-bottom with the AM mark in one line: dot, A, dot, M, dot. Rendered at 4x and scaled down for smooth edges.
+Design: a white T with stitched seams along its bar and stem on teal, with a white band along the
+bottom carrying the AM logo in one black line (dot A dot M dot). Rendered at 4x and scaled down for smooth edges.
 
 Usage: python tools/make_app_icon.py
 Writes TallySeam/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png and branding/AppIcon-1024.png.
@@ -66,28 +66,24 @@ def draw():
     d = ImageDraw.Draw(img)
 
     # A white T (bar and stem) with stitched seams running along the middle of each.
-    d.rounded_rectangle([p(250), p(170), p(734), p(300)], radius=p(34), fill=WHITE)
-    d.rounded_rectangle([p(427), p(170), p(557), p(700)], radius=p(34), fill=WHITE)
-    dashed_line(d, (p(285), p(235)), (p(699), p(235)), p(18), p(46), p(34), TEAL)
-    dashed_line(d, (p(492), p(330)), (p(492), p(670)), p(18), p(46), p(34), TEAL)
+    d.rounded_rectangle([p(250), p(190), p(774), p(320)], radius=p(34), fill=WHITE)
+    d.rounded_rectangle([p(447), p(190), p(577), p(720)], radius=p(34), fill=WHITE)
+    dashed_line(d, (p(285), p(255)), (p(739), p(255)), p(18), p(46), p(34), TEAL)
+    dashed_line(d, (p(512), p(350)), (p(512), p(690)), p(18), p(46), p(34), TEAL)
 
-    # Black strip along the bottom edge (iOS rounds its outer corners), with the AM mark written in
-    # one line: dot, A, dot, M, dot, evenly spaced and centred.
-    top = 790
-    d.rectangle([0, p(top), SIZE, SIZE], fill=BLACK)
-    cy = (top + 1024) / 2
-    f = font(p(110))
-    r = 16
-    gap = 64
-    items = ["dot", "A", "dot", "M", "dot"]
-    widths = [2 * r if i == "dot" else d.textlength(i, font=f) / S for i in items]
-    x = (1024 - (sum(widths) + gap * (len(items) - 1))) / 2
-    for item, w in zip(items, widths):
-        if item == "dot":
-            d.ellipse([p(x), p(cy - r), p(x + 2 * r), p(cy + r)], fill=WHITE)
+    # White band along the bottom with the AM logo in one black line: dot A dot M dot, evenly spaced.
+    # iOS rounds the band's outer corners along with the icon.
+    band_top = 810
+    d.rectangle([0, p(band_top), SIZE, SIZE], fill=WHITE)
+    cy = (band_top + 1024) / 2
+    f = font(p(120))
+    r = p(17)
+    for i, item in enumerate(["•", "A", "•", "M", "•"]):
+        cx = 272 + i * 120
+        if item == "•":
+            d.ellipse([p(cx) - r, p(cy) - r, p(cx) + r, p(cy) + r], fill=BLACK)
         else:
-            d.text((p(x), p(cy)), item, font=f, fill=WHITE, anchor="lm")
-        x += w + gap
+            d.text((p(cx), p(cy)), item, font=f, fill=BLACK, anchor="mm")
 
     return img.resize((1024, 1024), Image.LANCZOS)
 
