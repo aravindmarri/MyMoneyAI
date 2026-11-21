@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Draws the TallySeam app icon (1024x1024 PNG, opaque, full-bleed: iOS rounds the corners).
 
-Design: a white T with stitched seams along its bar and stem on teal, with the AM logo as one line
-(dot A dot M dot) on a black band across the bottom. Rendered at 4x and scaled down for smooth edges.
+Design: a white T with stitched seams along its bar and stem on teal, with the AM logo as a horizontal
+line (dot A dot M dot) on a black band near the bottom. Rendered at 4x and scaled down for smooth edges.
 
 Usage: python tools/make_app_icon.py
 Writes TallySeam/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png and branding/AppIcon-1024.png.
@@ -66,23 +66,25 @@ def draw():
     d = ImageDraw.Draw(img)
 
     # A white T (bar and stem) with stitched seams running along the middle of each.
-    d.rounded_rectangle([p(250), p(170), p(774), p(300)], radius=p(34), fill=WHITE)
-    d.rounded_rectangle([p(447), p(170), p(577), p(700)], radius=p(34), fill=WHITE)
-    dashed_line(d, (p(285), p(235)), (p(739), p(235)), p(18), p(46), p(34), TEAL)
-    dashed_line(d, (p(512), p(330)), (p(512), p(670)), p(18), p(46), p(34), TEAL)
+    d.rounded_rectangle([p(250), p(230), p(734), p(360)], radius=p(34), fill=WHITE)
+    d.rounded_rectangle([p(427), p(230), p(557), p(770)], radius=p(34), fill=WHITE)
+    dashed_line(d, (p(285), p(295)), (p(699), p(295)), p(18), p(46), p(34), TEAL)
+    dashed_line(d, (p(492), p(390)), (p(492), p(740)), p(18), p(46), p(34), TEAL)
 
-    # The AM logo as one horizontal line, dot A dot M dot, evenly spaced, white on a black band across
-    # the bottom (iOS rounds the band's lower corners with the icon).
-    d.rectangle([0, p(800), SIZE, SIZE], fill=BLACK)
-    cy, step = 902, 120
-    xs = [512 + (i - 2) * step for i in range(5)]
-    r = p(14)
-    f = font(p(96))
-    for i, x in enumerate(xs):
-        if i % 2 == 0:
+    # AM logo as one horizontal line on a black band: dot A dot M dot, evenly spaced.
+    d.rectangle([0, p(820), SIZE, p(960)], fill=BLACK)
+    cy = 890
+    f = font(p(84))
+    items = ["dot", "A", "dot", "M", "dot"]
+    step = 110
+    x = 512 - step * (len(items) - 1) / 2
+    r = p(13)
+    for it in items:
+        if it == "dot":
             d.ellipse([p(x) - r, p(cy) - r, p(x) + r, p(cy) + r], fill=WHITE)
         else:
-            d.text((p(x), p(cy)), "A" if i == 1 else "M", font=f, fill=WHITE, anchor="mm")
+            d.text((p(x), p(cy)), it, font=f, fill=WHITE, anchor="mm")
+        x += step
 
     return img.resize((1024, 1024), Image.LANCZOS)
 
