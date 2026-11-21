@@ -251,6 +251,8 @@ jobs:
           fi
           [ "$FAIL" = 0 ] || exit 1
           DISPLAY=$(plutil -extract CFBundleDisplayName raw "$APP/Info.plist")
+          ICON=$(plutil -extract CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName raw "$APP/Info.plist" 2>/dev/null || echo none)
+          [ "$ICON" = "AppIcon" ] && [ -f "$APP/Assets.car" ] || { echo "::error::App icon missing (icon name '$ICON')"; exit 1; }
           [ "$DISPLAY" = "TallySeam" ] || { echo "::error::Display name is $DISPLAY, expected TallySeam"; exit 1; }
           if echo "$LINKED" | grep -q '/FoundationModels.framework/'; then
             otool -l "$APP/TallySeam" | grep -B3 FoundationModels.framework | grep -q LC_LOAD_WEAK_DYLIB \
@@ -260,7 +262,7 @@ jobs:
             AI="not included"
           fi
           SIZE=$(stat -f%z build/TallySeam-unsigned.ipa)
-          echo "::notice title=IPA verified::name=$DISPLAY, appleIntelligence=$AI, bundleId=$BUNDLE_ID, version=$VERSION ($BUILD), platform=$PLATFORM/$BUILD_PLATFORM, archs=$ARCHS, minOS=$MIN_OS, bytes=$SIZE"
+          echo "::notice title=IPA verified::name=$DISPLAY, icon=$ICON, appleIntelligence=$AI, bundleId=$BUNDLE_ID, version=$VERSION ($BUILD), platform=$PLATFORM/$BUILD_PLATFORM, archs=$ARCHS, minOS=$MIN_OS, bytes=$SIZE"
           {
             echo "## IPA verification"
             echo
