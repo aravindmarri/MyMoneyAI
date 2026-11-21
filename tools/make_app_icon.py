@@ -65,21 +65,22 @@ def draw():
     d = ImageDraw.Draw(img)
 
     # Four tally marks.
-    for x in (210, 340, 470, 600):
+    for x in (230, 360, 490, 620):
         round_line(d, (p(x), p(220)), (p(x), p(690)), p(64), WHITE)
     # The stitched seam crossing them, in place of the fifth stroke.
-    dashed_line(d, (p(140), p(640)), (p(700), p(300)), p(50), p(86), p(50), MINT)
+    dashed_line(d, (p(160), p(640)), (p(720), p(300)), p(50), p(86), p(50), MINT)
 
     # Black corner block running to the bottom and right edges; iOS's rounded icon corner becomes its
     # outer edge. Only the inner (top-left) corner is rounded, like the logo's own square.
-    block = 380
+    block = 300
     bx = 1024 - block
     d.rounded_rectangle([p(bx), p(bx), p(1024) + p(200), p(1024) + p(200)], radius=p(75), fill=BLACK)
 
     # The AM logo exactly as in branding/am-logo.svg (a 75-unit square): "A" and a dot on top, a dot and
-    # "M" below, same positions and sizes, placed inside the part of the block iOS doesn't round off.
-    L = 300
-    lx, ly = bx + 24, bx + 24
+    # "M" below, same positions and sizes, centred in the part of the block iOS doesn't round off
+    # (slightly up and left of the block's middle, because the outer corner is cut away).
+    L = 220
+    lx, ly = bx + 30, bx + 30
 
     def u(v):
         return v / 75 * L
