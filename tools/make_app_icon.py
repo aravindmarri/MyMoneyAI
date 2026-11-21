@@ -77,21 +77,23 @@ def draw():
     bx = 1024 - block
     d.rounded_rectangle([p(bx), p(bx), p(1024) + p(200), p(1024) + p(200)], radius=p(75), fill=BLACK)
 
-    # The AM logo exactly as in branding/am-logo.svg (a 75-unit square): "A" and a dot on top, a dot and
-    # "M" below, same positions and sizes, centred in the part of the block iOS doesn't round off
-    # (slightly up and left of the block's middle, because the outer corner is cut away).
-    L = 220
-    lx, ly = bx + 30, bx + 30
-
-    def u(v):
-        return v / 75 * L
-
-    d.text((p(lx + u(13.0)), p(ly + u(25.9))), "A", font=font(p(u(19.41))), fill=WHITE, anchor="ls")
-    d.text((p(lx + u(47.41)), p(ly + u(63.47))), "M", font=font(p(u(20.38))), fill=WHITE, anchor="ls")
-    r = p(u(3.75))
-    for (cx, cy) in ((56.25, 18.77), (18.75, 56.32)):
-        x, y = p(lx + u(cx)), p(ly + u(cy))
-        d.ellipse([x - r, y - r, x + r, y + r], fill=WHITE)
+    # The AM logo as one row, "• A • M •", centred in the part of the block iOS doesn't round off
+    # (a little up and left of the block's middle, because the outer corner is cut away).
+    f = font(p(70))
+    r, gap = p(9), p(12)
+    parts = ["dot", "A", "dot", "M", "dot"]
+    widths = [2 * r if t == "dot" else f.getlength(t) for t in parts]
+    total = sum(widths) + gap * (len(parts) - 1)
+    x = p(bx + 135) - total / 2
+    baseline = p(bx + 150)
+    cap = f.getbbox("A", anchor="ls")[1]  # negative: cap height above the baseline
+    for t, w in zip(parts, widths):
+        if t == "dot":
+            cy = baseline + cap / 2
+            d.ellipse([x, cy - r, x + 2 * r, cy + r], fill=WHITE)
+        else:
+            d.text((x, baseline), t, font=f, fill=WHITE, anchor="ls")
+        x += w + gap
 
     return img.resize((1024, 1024), Image.LANCZOS)
 
