@@ -11,6 +11,7 @@ struct DashboardView: View {
     @Query private var paymentMethods: [PaymentMethod]
     @Query private var statementLines: [StatementTransaction]
     @State private var showAccountSetup = false
+    @State private var showCheckIn = false
     @State private var model = DashboardViewModel()
     @State private var editorRoute: TransactionEditorRoute?
 
@@ -34,6 +35,7 @@ struct DashboardView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     quickActions
+                    NetWorthCard(currencyCode: currency) { showCheckIn = true }
                     if paymentMethods.isEmpty { accountSetupPrompt }
                     if !statementLines.isEmpty { verifiedSpendingCard(records) }
                     spendingSection(records: records, categories: categories)
@@ -49,6 +51,7 @@ struct DashboardView: View {
             .navigationTitle("Home")
             .sheet(item: $editorRoute) { TransactionEditorView(route: $0) }
             .sheet(isPresented: $showAccountSetup) { AccountSetupView() }
+            .sheet(isPresented: $showCheckIn) { MonthlyCheckInView() }
         }
     }
 
