@@ -1,24 +1,24 @@
 # Build Status
 
-_Last updated: 2026-11-20 (CI run #39)_
+_Last updated: 2026-11-20 (CI run #41)_
 
 Development happens on Windows. iOS builds and tests run on GitHub Actions (`.github/workflows/ios-build.yml`, `macos-15` runner, XcodeGen).
 
-## Summary (CI run #39, commit `f1b4e14`)
+## Summary (CI run #41, commit `f781bcc`)
 
 | Check | Result |
 |---|---|
 | iOS Simulator compile | **Pass** (GitHub Actions) |
 | Automated tests | **Pass: 236 of 236** (0 failed, 0 skipped), Swift Testing and XCTest on the iOS Simulator |
-| Unsigned device archive | **Pass.** `TallySeam-unsigned-ipa` artifact (1,576,023 bytes, kept for 14 days) |
-| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.tallyseam`, version 1.0 (39), display name TallySeam, minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
+| Unsigned device archive | **Pass.** `TallySeam-unsigned-ipa` artifact (1,585,501 bytes, kept for 14 days) |
+| IPA verification (CI) | **Pass.** Real device build: platform `iphoneos` / Mach-O `IOS`, `arm64` only, bundle ID `io.github.aravindmarri.tallyseam`, version 1.0 (41), display name TallySeam, built with Xcode 26.6, FoundationModels weak-linked (Apple Intelligence included; runs on iOS 17+), minimum iOS 17.0, no bundled frameworks, no Network/CloudKit/WebKit linkage |
 | Network-use checks | **Pass.** Static source scan, linked-framework check on the IPA, and a runtime test showing OCR, calculations and backups make no requests |
 | Run on a real iPhone | **Not done.** Install with Sideloadly and a free Apple Account: see README → INSTALL_ON_IPHONE |
 | Manual UI check (layout, VoiceOver, Dynamic Type, dark mode) | **Not done** |
 | Airplane-mode check on a device | **Not done.** The code makes no network calls, and Vision OCR ran offline in the simulator test |
 | Static source checks (`python tools/check_sources.py`) | **Pass:** 94 Swift files |
 
-Run: https://github.com/aravindmarri/TallySeam/actions/runs/44670027062
+Run: https://github.com/aravindmarri/TallySeam/actions/runs/44854121801
 
 ### CI history
 
@@ -37,6 +37,7 @@ Run: https://github.com/aravindmarri/TallySeam/actions/runs/44670027062
 | #13 | `bd249b2` | Fail | A new test expression was too slow to type-check. IPA job passed and the IPA was verified |
 | #14 | `e75e5ae` | **Pass** | 132 of 132 tests (Phases 1–6 and install readiness); IPA verified |
 | #16 | `d24c455` | **Pass** | 153 of 153 tests (Phase 7: CSV import and export); IPA verified |
+| #41 | `f781bcc` | **Pass** | 236 of 236; CI now uses the newest Xcode (26.6), so Apple Intelligence is compiled in (weak-linked). Builds up to #39 were made with Xcode 16 and left it out |
 | #36 | `29fa332` | Fail | Phase E: a main-actor helper was called from the background assistant |
 | #37 | `6f58855` | Fail | IPA job passed; the new performance test had expressions too slow to type-check |
 | #39 | `f1b4e14` | **Pass** | 236 of 236 tests (statement import Phase E); IPA verified |
@@ -110,7 +111,7 @@ Run: https://github.com/aravindmarri/TallySeam/actions/runs/44670027062
 
 **Statement import Phase E** (run #39): see docs/STATEMENT_IMPORT.md
 - Encrypted backups include accounts, sessions, statements, lines, matches and learned spellings; add-only, deduplicated by id and file fingerprint, validated, all-or-nothing; older backups still import
-- Description assistant: rule-based explanations, merchant names and category suggestions on every iPhone; optional Apple Intelligence (iOS 26, availability-gated, off by default, answers checked, suggestions only). The Apple Intelligence path is not compiled in CI (Xcode 16 has no FoundationModels) and is untested
+- Description assistant: rule-based explanations, merchant names and category suggestions on every iPhone; optional Apple Intelligence (iOS 26, availability-gated, off by default, answers checked, suggestions only). The Apple Intelligence path compiles from run #41 (Xcode 26.6) but has no automated test of the model itself
 - Delete saved statements while keeping transactions; Smart Suggestions switch in Settings
 - Faster matching (day numbers and merchant keys computed once, binary search by date); 1,000 lines vs 3,000 transactions tested under 15 s
 
